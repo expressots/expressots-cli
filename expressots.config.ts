@@ -1,14 +1,8 @@
-enum Pattern {
-	LOWER_CASE = "lowercase",
-	KEBAB_CASE = "kebab-case",
-	PASCAL_CASE = "PascalCase",
-	CAMEL_CASE = "camelCase",
-}
+import { Config, Pattern } from "./src/types";
 
-const config = {
-	scaffoldPattern: Pattern.KEBAB_CASE,
-	sourceRoot: "src",
-	opinionated: true,
+const config: Config = {
+    src: "src",
+    pattern: Pattern.LOWER_CASE,
 };
 
-export { config };
+export default config;

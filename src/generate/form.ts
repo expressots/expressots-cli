@@ -1,7 +1,5 @@
-import { Pattern } from "../types";
-import Config from "../utils/expresso-config";
 import "../utils/string";
-import { toCamelCase, toKebabCase, toPascalCase } from "../utils/string";
+import path from "path";
 
 type CreateTemplateProps = {
 	schematic: string;
@@ -105,22 +103,69 @@ const splitTargetProviderEdgeCase = ({
 	};
 };
 
-const getNameWithScaffoldPattern = (name: string) => {
-	const {
-		config: { scaffoldPattern },
-	} = Config.getConfig();
+function interopRequireDefault(obj: any): any {
+  return obj && obj.__esModule ? obj : {default: obj};
+}
 
-	switch (scaffoldPattern) {
-		case Pattern.LOWER_CASE:
-			return name.toLowerCase();
-		case Pattern.KEBAB_CASE:
-			return toKebabCase(name);
-		case Pattern.PASCAL_CASE:
-			return toPascalCase(name);
-		case Pattern.CAMEL_CASE:
-			return toCamelCase(name);
-	}
+const loadTSConfigFile = async (
+  configPath: string,
+): Promise<any> => {
+  // Get registered TypeScript compiler instance
+  const registeredCompiler = await getRegisteredCompiler();
+
+  registeredCompiler.enabled(true);
+
+  let configObject = interopRequireDefault(require(configPath)).default;
+
+  // In case the config is a function which imports more Typescript code
+  if (typeof configObject === 'function') {
+    configObject = await configObject();
+  }
+
+  registeredCompiler.enabled(false);
+
+  return configObject;
 };
+
+let registeredCompilerPromise: Promise<any>;
+
+function getRegisteredCompiler() {
+  // Cache the promise to avoid multiple registrations
+  registeredCompilerPromise = registeredCompilerPromise ?? registerTsNode();
+  return registeredCompilerPromise;
+}
+
+async function registerTsNode(): Promise<any> {
+  try {
+    // Register TypeScript compiler instance
+    const tsNode = await import('ts-node');
+    return tsNode.register({
+      compilerOptions: {
+        module: 'CommonJS',
+      },
+      moduleTypes: {
+        '**': 'cjs',
+      },
+    });
+  } catch (e: any) {
+    if (e.code === 'ERR_MODULE_NOT_FOUND') {
+      throw new Error(
+        `Jest: 'ts-node' is required for the TypeScript configuration files. Make sure it is installed\nError: ${e.message}`,
+      );
+    }
+
+    throw e;
+  }
+}
+
+const getNameWithScaffoldPattern = async (name: string) => {
+	const configPath = path.join(process.cwd(), 'expressots.config.ts');
+
+	const configObject = await loadTSConfigFile(configPath);
+	console.log(configObject);
+};
+
+
 
 const pathEdgeCase = (path: string[]): string => {
 	return `${path.join("/")}${path.length > 0 ? "/" : ""}`;

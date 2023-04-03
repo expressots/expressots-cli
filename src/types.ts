@@ -5,12 +5,9 @@ enum Pattern {
 	CAMEL_CASE = "camelCase",
 }
 
-type ExpressoConfig = {
-	config: {
-		scaffoldPattern: Pattern;
-		sourceRoot: string;
-		opinionated: boolean;
-	};
-};
+interface Config {
+	src: string;
+	pattern: string;
+}
 
-export { Pattern, ExpressoConfig };
+export { Pattern, Config }

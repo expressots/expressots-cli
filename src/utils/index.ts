@@ -1,1 +1,1 @@
-export * from "./expresso-config";
+export * from "./string";

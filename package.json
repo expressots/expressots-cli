@@ -45,6 +45,7 @@
     "cli-progress": "^3.11.2",
     "degit": "^2.8.4",
     "inquirer": "^8.0.0",
+    "ts-node": "^10.9.1",
     "yargs": "^17.6.2"
   },
   "devDependencies": {
