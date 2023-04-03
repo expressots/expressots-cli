@@ -1,22 +1,74 @@
 import "../utils/string";
-import path from "path";
+import * as nodePath from "path";
+import Compiler from "../utils/compiler";
+import { mkdirSync, readFileSync } from "node:fs";
+import { Pattern } from "../types";
+import { toCamelCase, toKebabCase, toPascalCase } from "../utils/string";
+import { render } from "mustache";
+import { writeFileSync } from "fs";
 
 type CreateTemplateProps = {
 	schematic: string;
 	path: string;
 };
 
-export const createTemplate = ({
+export const createTemplate = async ({
 	schematic,
 	path: target,
 }: CreateTemplateProps) => {
 	const withinSource = schematicFolder(schematic);
 	if (!withinSource) return;
 
-	const { path, file } = splitTarget({ target, schematic });
+	const { path, file, className } = await splitTarget({ target, schematic });
 
-	console.log(path, file);
-	console.log(`> src/${withinSource}/${path}${file}`);
+	const { sourceRoot } = await Compiler.loadConfig();
+
+	mkdirSync(`${sourceRoot}/${withinSource}/${path}`, { recursive: true });
+
+	if (schematic !== "service") {
+		return writeTemplate({
+			outputPath: `${sourceRoot}/${withinSource}/${path}${file}`,
+			template: {
+				path: `./templates/${schematic}.tpl`,
+				data: { className },
+			},
+		});
+	}
+
+	for await (const currentSchematic of ["controller", "usecase", "dto"]) {
+		const schematicFile = file.replace(
+			`controller.ts`,
+			`${currentSchematic}.ts`,
+		);
+
+    console.log(`[${currentSchematic}] Creating ${schematicFile}...`);
+
+		writeTemplate({
+			outputPath: `${sourceRoot}/${withinSource}/${path}${schematicFile}`,
+			template: {
+				path: `./templates/${currentSchematic}.tpl`,
+				data: {
+					className,
+				},
+			},
+		});
+	}
+};
+
+const writeTemplate = ({
+	outputPath,
+	template: { path, data },
+}: {
+	outputPath: string;
+	template: {
+		path: string;
+		data: Record<string, string>;
+	};
+}) => {
+	writeFileSync(
+		outputPath,
+		render(readFileSync(nodePath.join(__dirname, path), "utf8"), data),
+	);
 };
 
 const schematicFolder = (schematic: string): string | undefined => {
@@ -36,18 +88,19 @@ const schematicFolder = (schematic: string): string | undefined => {
 	return undefined;
 };
 
-const splitTarget = ({
+const splitTarget = async ({
 	target,
 	schematic,
 }: {
 	target: string;
 	schematic: string;
-}): {
+}): Promise<{
 	path: string;
 	file: string;
-} => {
+	className: string;
+}> => {
 	if (schematic === "provider")
-		return splitTargetProviderEdgeCase({ target, schematic });
+		return await splitTargetProviderEdgeCase({ target, schematic });
 
 	if (schematic === "service") schematic = "controller"; // Anything just to generate
 
@@ -68,27 +121,30 @@ const splitTarget = ({
 
 		return {
 			path: `${wordName}/${pathEdgeCase(path)}${pathEdgeCase(remainingPath)}`,
-			file: `${getNameWithScaffoldPattern(name)}.${schematic}.ts`,
+			file: `${await getNameWithScaffoldPattern(name)}.${schematic}.ts`,
+			className: toPascalCase(name),
 		};
 	}
 
 	// 3. Return the base case
 	return {
 		path: `${name}/${pathEdgeCase(remainingPath)}`,
-		file: `${getNameWithScaffoldPattern(name)}.${schematic}.ts`,
+		file: `${await getNameWithScaffoldPattern(name)}.${schematic}.ts`,
+		className: toPascalCase(name),
 	};
 };
 
-const splitTargetProviderEdgeCase = ({
+const splitTargetProviderEdgeCase = async ({
 	target,
 	schematic,
 }: {
 	target: string;
 	schematic: string;
-}): {
+}): Promise<{
 	path: string;
 	file: string;
-} => {
+	className: string;
+}> => {
 	// Check if the last path ends with a slash, if it does it's supposed to be a folder
 	// and the name of the file will be the same as the folder
 	const isFolder = target.endsWith("/");
@@ -99,73 +155,25 @@ const splitTargetProviderEdgeCase = ({
 
 	return {
 		path: pathEdgeCase(path),
-		file: `${getNameWithScaffoldPattern(name)}.${schematic}.ts`,
+		file: `${await getNameWithScaffoldPattern(name)}.${schematic}.ts`,
+		className: toPascalCase(name),
 	};
 };
 
-function interopRequireDefault(obj: any): any {
-  return obj && obj.__esModule ? obj : {default: obj};
-}
-
-const loadTSConfigFile = async (
-  configPath: string,
-): Promise<any> => {
-  // Get registered TypeScript compiler instance
-  const registeredCompiler = await getRegisteredCompiler();
-
-  registeredCompiler.enabled(true);
-
-  let configObject = interopRequireDefault(require(configPath)).default;
-
-  // In case the config is a function which imports more Typescript code
-  if (typeof configObject === 'function') {
-    configObject = await configObject();
-  }
-
-  registeredCompiler.enabled(false);
-
-  return configObject;
-};
-
-let registeredCompilerPromise: Promise<any>;
-
-function getRegisteredCompiler() {
-  // Cache the promise to avoid multiple registrations
-  registeredCompilerPromise = registeredCompilerPromise ?? registerTsNode();
-  return registeredCompilerPromise;
-}
-
-async function registerTsNode(): Promise<any> {
-  try {
-    // Register TypeScript compiler instance
-    const tsNode = await import('ts-node');
-    return tsNode.register({
-      compilerOptions: {
-        module: 'CommonJS',
-      },
-      moduleTypes: {
-        '**': 'cjs',
-      },
-    });
-  } catch (e: any) {
-    if (e.code === 'ERR_MODULE_NOT_FOUND') {
-      throw new Error(
-        `Jest: 'ts-node' is required for the TypeScript configuration files. Make sure it is installed\nError: ${e.message}`,
-      );
-    }
-
-    throw e;
-  }
-}
-
 const getNameWithScaffoldPattern = async (name: string) => {
-	const configPath = path.join(process.cwd(), 'expressots.config.ts');
+	const configObject = await Compiler.loadConfig();
 
-	const configObject = await loadTSConfigFile(configPath);
-	console.log(configObject);
+	switch (configObject.scaffoldPattern) {
+		case Pattern.LOWER_CASE:
+			return name.toLowerCase();
+		case Pattern.KEBAB_CASE:
+			return toKebabCase(name);
+		case Pattern.PASCAL_CASE:
+			return toPascalCase(name);
+		case Pattern.CAMEL_CASE:
+			return toCamelCase(name);
+	}
 };
-
-
 
 const pathEdgeCase = (path: string[]): string => {
 	return `${path.join("/")}${path.length > 0 ? "/" : ""}`;
