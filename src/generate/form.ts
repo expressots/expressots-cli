@@ -5,12 +5,21 @@ import { mkdirSync, readFileSync } from "node:fs";
 import { Pattern } from "../types";
 import { toCamelCase, toKebabCase, toPascalCase } from "../utils/string";
 import { render } from "mustache";
-import { writeFileSync } from "fs";
+import { writeFileSync, existsSync } from "fs";
+import chalk from "chalk";
 
 type CreateTemplateProps = {
 	schematic: string;
 	path: string;
 };
+
+const messageColors = {
+	usecase: (text: string) => chalk.cyan(text),
+	controller: (text: string) => chalk.magenta(text),
+	dto: (text: string) => chalk.blue(text),
+	provider: (text: string) => chalk.yellow(text),
+	module: (text: string) => chalk.red(text),
+} as { [key: string]: (text: string) => string }
 
 export const createTemplate = async ({
 	schematic,
@@ -23,32 +32,54 @@ export const createTemplate = async ({
 
 	const { sourceRoot } = await Compiler.loadConfig();
 
-	mkdirSync(`${sourceRoot}/${withinSource}/${path}`, { recursive: true });
+	const usecaseDir = `${sourceRoot}/${withinSource}`;
+
+	mkdirSync(`${usecaseDir}/${path}`, { recursive: true });
 
 	if (schematic !== "service") {
-		return writeTemplate({
-			outputPath: `${sourceRoot}/${withinSource}/${path}${file}`,
+		console.log(messageColors[schematic](`> [${schematic}] Creating ${file}...`));
+
+		writeTemplate({
+			outputPath: `${usecaseDir}/${path}${file}`,
 			template: {
 				path: `./templates/${schematic}.tpl`,
 				data: { className },
 			},
 		});
+	} else {
+		for await (const currentSchematic of ["controller", "usecase", "dto"]) {
+			const schematicFile = file.replace(
+				`controller.ts`,
+				`${currentSchematic}.ts`,
+			);
+
+			console.log(messageColors[currentSchematic](`> [${currentSchematic}] Creating ${schematicFile}...`));
+
+			writeTemplate({
+				outputPath: `${usecaseDir}/${path}${schematicFile}`,
+				template: {
+					path: `./templates/${currentSchematic}.tpl`,
+					data: {
+						className,
+					},
+				},
+			});
+		}
 	}
 
-	for await (const currentSchematic of ["controller", "usecase", "dto"]) {
-		const schematicFile = file.replace(
-			`controller.ts`,
-			`${currentSchematic}.ts`,
-		);
+	const moduleName = path.split("/")[0];
 
-    console.log(`[${currentSchematic}] Creating ${schematicFile}...`);
+	if (["controller", "service"].includes(schematic) && !existsSync(`${usecaseDir}/${moduleName}/${moduleName}.module.ts`)) {
+		console.log(messageColors.module(`> [module] Creating ${moduleName}.module.ts...`));
 
 		writeTemplate({
-			outputPath: `${sourceRoot}/${withinSource}/${path}${schematicFile}`,
+			outputPath: `${usecaseDir}/${moduleName}/${moduleName}.module.ts`,
 			template: {
-				path: `./templates/${currentSchematic}.tpl`,
+				path: `./templates/module.tpl`,
 				data: {
+					moduleName: moduleName[0].toUpperCase() + moduleName.slice(1),
 					className,
+					path: `${path.split("/")[1]}/${file}`
 				},
 			},
 		});

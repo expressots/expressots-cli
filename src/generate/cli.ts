@@ -1,5 +1,6 @@
 import { CommandModule, Argv } from "yargs";
 import { createTemplate } from "./form";
+import chalk from "chalk";
 
 type CommandModuleArgs = {};
 
@@ -11,7 +12,7 @@ const generateProject = (): CommandModule<CommandModuleArgs, any> => {
 		builder: (yargs: Argv): Argv => {
 			yargs.positional("schematic", {
 				choices: [
-					"useCase",
+					"usecase",
 					"controller",
 					"dto",
 					"service",
@@ -30,7 +31,9 @@ const generateProject = (): CommandModule<CommandModuleArgs, any> => {
 			return yargs;
 		},
 		handler: async ({ schematic, path }) => {
-      return await createTemplate({ schematic, path });
+      await createTemplate({ schematic, path });
+
+			console.log(chalk.green(`> ${path} ${schematic} created! 🚀`))
 		},
 	};
 };
@@ -38,7 +41,7 @@ const generateProject = (): CommandModule<CommandModuleArgs, any> => {
 const coerceSchematicAliases = (arg: string) => {
 	switch (arg) {
 		case "u":
-			return "useCase";
+			return "usecase";
 		case "c":
 			return "controller";
 		case "d":

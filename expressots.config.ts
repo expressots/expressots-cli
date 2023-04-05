@@ -1,8 +1,9 @@
-import { Config, Pattern } from "./src/types";
+import { ExpressoConfig, Pattern } from "./src/types";
 
-const config: Config = {
-    src: "src",
-    pattern: Pattern.LOWER_CASE,
+const config: ExpressoConfig = {
+    sourceRoot: "src",
+    scaffoldPattern: Pattern.CAMEL_CASE,
+	opinionated: true
 };
 
 export default config;
