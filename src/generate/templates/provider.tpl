@@ -1,10 +1,10 @@
 import { provide } from "inversify-binding-decorators";
 
-@provide({{className}})
-class {{className}} {
+@provide({{className}}Provider)
+class {{className}}Provider {
 
     constructor() {}
 
 }
 
-export { {{className}} };
+export { {{className}}Provider };

@@ -1,13 +1,16 @@
-import { controller, httpGet, response } from "inversify-express-utils";
+import { BaseController } from "@expressots/core";
+import { controller, httpPost, requestBody, response } from "inversify-express-utils";
 
 @controller("/")
-class {{className}}Controller {
-  
-  constructor() { }
+class {{className}}Controller extends BaseController {
 
-  @httpGet("/")
-  execute(@response() res: any) {
-    return res.send("You use case called here");
+  constructor() {
+		super("{{className}}-controller")
+	}
+
+  @httpPost("/")
+  execute(@requestBody() data: any, @response() res: any) {
+    return res.json(data);
   }
 }
 

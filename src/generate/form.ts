@@ -3,7 +3,7 @@ import * as nodePath from "path";
 import Compiler from "../utils/compiler";
 import { mkdirSync, readFileSync } from "node:fs";
 import { Pattern } from "../types";
-import { toCamelCase, toKebabCase, toPascalCase } from "../utils/string";
+import { toCamelCase, toKebabCase, toPascalCase, toLowerCase } from "../utils/string";
 import { render } from "mustache";
 import { writeFileSync, existsSync } from "fs";
 import chalk from "chalk";
@@ -79,11 +79,13 @@ export const createTemplate = async ({
 				data: {
 					moduleName: moduleName[0].toUpperCase() + moduleName.slice(1),
 					className,
-					path: `${path.split("/")[1]}/${file}`
+					path: `${path.split("/")[1]}/${file.slice(0, file.lastIndexOf('.'))}`
 				},
 			},
 		});
 	}
+
+	return file;
 };
 
 const writeTemplate = ({
@@ -196,7 +198,7 @@ const getNameWithScaffoldPattern = async (name: string) => {
 
 	switch (configObject.scaffoldPattern) {
 		case Pattern.LOWER_CASE:
-			return name.toLowerCase();
+			return toLowerCase(name);
 		case Pattern.KEBAB_CASE:
 			return toKebabCase(name);
 		case Pattern.PASCAL_CASE:

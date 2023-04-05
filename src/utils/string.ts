@@ -42,4 +42,11 @@ const toCamelCase = (str: string): string => {
 		.join("");
 };
 
-export { toPascalCase, toKebabCase, toCamelCase };
+const toLowerCase = (str: string): string => {
+	return str
+		.toLowerCase()
+		.split(" ")
+		.join("");
+};
+
+export { toPascalCase, toKebabCase, toCamelCase, toLowerCase };

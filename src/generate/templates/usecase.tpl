@@ -1,6 +1,6 @@
 import { provide } from "inversify-binding-decorators";
 
-@provide({{className}})
+@provide({{className}}UseCase)
 class {{className}}UseCase {
 
     constructor() {}
