@@ -42,6 +42,7 @@
     "prepare": "husky install"
   },
   "dependencies": {
+    "@expressots/boost-ts": "^1.1.1",
     "chalk-animation": "^1",
     "cli-progress": "^3.11.2",
     "degit": "^2.8.4",

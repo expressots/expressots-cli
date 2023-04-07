@@ -1,12 +1,15 @@
-import "../utils/string";
 import * as nodePath from "path";
-import Compiler from "../utils/compiler";
 import { mkdirSync, readFileSync } from "node:fs";
-import { Pattern } from "../types";
-import { toCamelCase, toKebabCase, toPascalCase, toLowerCase } from "../utils/string";
 import { render } from "mustache";
 import { writeFileSync, existsSync } from "fs";
 import chalk from "chalk";
+import { anyCaseToCamelCase, anyCaseToKebabCase, anyCaseToPascalCase, anyCaseToLowerCase } from "@expressots/boost-ts";
+import Compiler from "../utils/compiler";
+import { Pattern } from "../types";
+
+function getFileNameWithoutExtension(filePath: string) {
+	return filePath.split('.')[0];
+}
 
 type CreateTemplateProps = {
 	schematic: string;
@@ -16,6 +19,7 @@ type CreateTemplateProps = {
 const messageColors = {
 	usecase: (text: string) => chalk.cyan(text),
 	controller: (text: string) => chalk.magenta(text),
+	"controller-service": (text: string) => chalk.magenta(text),
 	dto: (text: string) => chalk.blue(text),
 	provider: (text: string) => chalk.yellow(text),
 	module: (text: string) => chalk.red(text),
@@ -43,24 +47,32 @@ export const createTemplate = async ({
 			outputPath: `${usecaseDir}/${path}${file}`,
 			template: {
 				path: `./templates/${schematic}.tpl`,
-				data: { className },
+				data: {
+					className,
+					route: path.replace(/\/$/, ''),
+					construct: anyCaseToKebabCase(className),
+				},
 			},
 		});
 	} else {
-		for await (const currentSchematic of ["controller", "usecase", "dto"]) {
+		for await (const currentSchematic of ["controller-service", "usecase", "dto"]) {
 			const schematicFile = file.replace(
 				`controller.ts`,
 				`${currentSchematic}.ts`,
 			);
 
-			console.log(messageColors[currentSchematic](`> [${currentSchematic}] Creating ${schematicFile}...`));
-
+			console.log(messageColors[currentSchematic](`> [${currentSchematic}] Creating ${schematicFile.replace("controller-service", "controller")}...`));
+			
 			writeTemplate({
-				outputPath: `${usecaseDir}/${path}${schematicFile}`,
+				outputPath: `${usecaseDir}/${path}${schematicFile.replace("controller-service", "controller")}`,
 				template: {
 					path: `./templates/${currentSchematic}.tpl`,
 					data: {
 						className,
+						fileName: getFileNameWithoutExtension(file),
+						useCase: anyCaseToCamelCase(className),
+						route: path.replace(/\/$/, ''),
+						construct: anyCaseToKebabCase(className),
 					},
 				},
 			});
@@ -155,7 +167,7 @@ const splitTarget = async ({
 		return {
 			path: `${wordName}/${pathEdgeCase(path)}${pathEdgeCase(remainingPath)}`,
 			file: `${await getNameWithScaffoldPattern(name)}.${schematic}.ts`,
-			className: toPascalCase(name),
+			className: anyCaseToPascalCase(name),
 		};
 	}
 
@@ -163,7 +175,7 @@ const splitTarget = async ({
 	return {
 		path: `${name}/${pathEdgeCase(remainingPath)}`,
 		file: `${await getNameWithScaffoldPattern(name)}.${schematic}.ts`,
-		className: toPascalCase(name),
+		className: anyCaseToPascalCase(name),
 	};
 };
 
@@ -189,7 +201,7 @@ const splitTargetProviderEdgeCase = async ({
 	return {
 		path: pathEdgeCase(path),
 		file: `${await getNameWithScaffoldPattern(name)}.${schematic}.ts`,
-		className: toPascalCase(name),
+		className: anyCaseToPascalCase(name),
 	};
 };
 
@@ -198,13 +210,13 @@ const getNameWithScaffoldPattern = async (name: string) => {
 
 	switch (configObject.scaffoldPattern) {
 		case Pattern.LOWER_CASE:
-			return toLowerCase(name);
+			return anyCaseToLowerCase(name);
 		case Pattern.KEBAB_CASE:
-			return toKebabCase(name);
+			return anyCaseToKebabCase(name);
 		case Pattern.PASCAL_CASE:
-			return toPascalCase(name);
+			return anyCaseToPascalCase(name);
 		case Pattern.CAMEL_CASE:
-			return toCamelCase(name);
+			return anyCaseToCamelCase(name);
 	}
 };
 

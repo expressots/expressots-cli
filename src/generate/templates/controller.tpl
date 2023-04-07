@@ -1,16 +1,16 @@
 import { BaseController } from "@expressots/core";
-import { controller, httpPost, requestBody, response } from "inversify-express-utils";
+import { controller, httpGet, response } from "inversify-express-utils";
 
-@controller("/")
+@controller("/{{{route}}}")
 class {{className}}Controller extends BaseController {
 
   constructor() {
-		super("{{className}}-controller")
+		super("{{construct}}-controller")
 	}
 
-  @httpPost("/")
-  execute(@requestBody() data: any, @response() res: any) {
-    return res.json(data);
+  @httpGet("/")
+  execute(@response() res: any) {
+    return res.send("Hello Expresso TS");
   }
 }
 
