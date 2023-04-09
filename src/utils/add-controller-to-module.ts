@@ -22,7 +22,7 @@ async function addControllerToModule(filePath: string, controllerName: string, c
 
   imports.push(newImport);
 
-  const moduleDeclarationRegex = /const UserModule = CreateModule\(\[(.*)\]\);/s;
+  const moduleDeclarationRegex = /CreateModule\(\[(.*)\]\);/s;
   const moduleDeclarationMatch = fileContent.match(moduleDeclarationRegex);
 
   if (!moduleDeclarationMatch) {
@@ -39,7 +39,7 @@ async function addControllerToModule(filePath: string, controllerName: string, c
 
   const newControllers = controllers.join(', ');
 
-  const newModuleDeclaration = `const UserModule = CreateModule([${newControllers}]);`;
+  const newModuleDeclaration = `CreateModule([${newControllers}]);`;
 
   const newFileContent = [...imports, ...notImports].join('\n').replace(moduleDeclarationRegex, newModuleDeclaration);
 
