@@ -5,7 +5,7 @@ type CommandModuleArgs = {};
 
 const createProject = (): CommandModule<CommandModuleArgs, any> => {
 	return {
-		command: "new <project-name> [package-manager] [template]",
+		command: "new <project-name> [package-manager] [template] [directory]",
 		describe: "Create a new Expresso TS project",
 		builder: (yargs: Argv): Argv => {
 			yargs
@@ -24,12 +24,17 @@ const createProject = (): CommandModule<CommandModuleArgs, any> => {
 				type: "string",
 				choices: ["npm", "yarn", "pnpm"],
 				alias: "p",
+			})
+			.option("directory", {
+				describe: "The directory for new project",
+				type: "string",
+				alias: "d",
 			});
 
 			return yargs;
 		},
-		handler: async ({projectName, packageManager, template}) => {
-			return await projectForm(projectName, packageManager, template);
+		handler: async ({projectName, packageManager, template, directory}) => {
+			return await projectForm(projectName, packageManager, template, directory);
 		},
 	};
 };

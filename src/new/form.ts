@@ -35,7 +35,7 @@ async function packageManagerInstall({
 			if (code === 0) {
 				resolve("Installation Done!");
 			} else {
-				reject(new Error(`npm install exited with code ${code}`));
+				reject(new Error(`${packageManager} install exited with code ${code}`));
 			}
 		});
 	});
@@ -84,7 +84,7 @@ const enum PackageManager {
 	pnpm,
 }
 
-const projectForm = async (projectName: string, packageManager: PackageManager, template: keyof typeof Template): Promise<void> => {
+const projectForm = async (projectName: string, packageManager: PackageManager, template: keyof typeof Template, directory: string): Promise<void> => {
 	let answer: any;
 	if (packageManager && template) {
 		answer = {
@@ -128,6 +128,16 @@ const projectForm = async (projectName: string, packageManager: PackageManager, 
 			},
 		]);
 	}
+
+	if (directory) {
+		if(!fs.existsSync(path.join(directory, answer.name))) {
+			answer.name = path.join(directory, answer.name);
+		} else { // if not exist return error
+			console.log(chalk.red(`There is already a project with this name in the directory: ${directory}`));
+			process.exit(1);
+		}
+	}
+
 	// Hashmap of templates and their directories
 	const templates: Record<string, unknown> = {
 		"Non-Opinionated": "non_opinionated",
@@ -187,7 +197,7 @@ const projectForm = async (projectName: string, packageManager: PackageManager, 
 		console.log(chalk.green("Project created successfully!"));
 		console.log("Run the following commands to start the project:");
 		console.log(chalk.bold(`cd ${answer.name}`));
-		console.log(chalk.bold(`${answer.packageManager} start`));
+		console.log(chalk.bold(`${answer.packageManager} dev`));
 	}
 };
 
