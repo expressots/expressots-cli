@@ -6,7 +6,7 @@ type CommandModuleArgs = {};
 
 const generateProject = (): CommandModule<CommandModuleArgs, any> => {
 	return {
-		command: "generate [schematic] [path]",
+		command: "generate [schematic] [path] [method]",
 		describe: "Generate a schematic",
 		aliases: ["g"],
 		builder: (yargs: Argv): Argv => {
@@ -28,10 +28,22 @@ const generateProject = (): CommandModule<CommandModuleArgs, any> => {
 				type: "string",
 			});
 
+			yargs.positional("method", {
+				choices: [
+					"get",
+					"post",
+					"put",
+					"patch",
+					"delete",
+				] as const,
+				describe: "Type of request",
+				type: "string",
+			});
+
 			return yargs;
 		},
-		handler: async ({ schematic, path }) => {
-      const file = await createTemplate({ schematic, path  });
+		handler: async ({ schematic, path, method }) => {
+      const file = await createTemplate({ schematic, path, method });
 
 			console.log(chalk.green(`> ${file.split(".")[0]} ${schematic} created! 🚀`))
 		},

@@ -16,6 +16,7 @@ function getFileNameWithoutExtension(filePath: string) {
 type CreateTemplateProps = {
 	schematic: string;
 	path: string;
+	method: string;
 };
 
 const messageColors = {
@@ -29,6 +30,7 @@ const messageColors = {
 export const createTemplate = async ({
 	schematic,
 	path: target,
+	method,
 }: CreateTemplateProps) => {
 	const withinSource = schematicFolder(schematic);
 	if (!withinSource) return;
@@ -54,6 +56,7 @@ export const createTemplate = async ({
 					className,
 					route: path.replace(/\/$/, ''),
 					construct: anyCaseToKebabCase(className),
+					method: getHttpMethod(method),
 				},
 			},
 		});
@@ -78,6 +81,7 @@ export const createTemplate = async ({
 						useCase: anyCaseToCamelCase(className),
 						route: path.replace(/\/$/, ''),
 						construct: anyCaseToKebabCase(className),
+						method: getHttpMethod(method),
 					},
 				},
 			});
@@ -112,6 +116,21 @@ export const createTemplate = async ({
 
 	return file;
 };
+
+const getHttpMethod = (method: string) : string => {
+	switch(method) {
+		case "put":
+			return "httpPut";
+		case "post":
+			return "httpPost";
+		case "patch":
+			return "httpPatch";
+		case "delete":
+			return "httpDelete";
+		default:
+			return "httpGet";
+	}
+}
 
 const writeTemplate = ({
 	outputPath,
