@@ -5,6 +5,7 @@ import { spawn, execSync } from "child_process";
 import { Presets, SingleBar } from "cli-progress";
 import fs from "node:fs";
 import path from "node:path";
+import { centerText } from "../utils/center-text";
 
 async function packageManagerInstall({
 	packageManager,
@@ -86,6 +87,8 @@ const enum PackageManager {
 
 const projectForm = async (projectName: string, packageManager: PackageManager, template: keyof typeof Template, directory: string): Promise<void> => {
 	let answer: any;
+	const projName: string = projectName;
+
 	if (packageManager && template) {
 		answer = {
 			name: projectName,
@@ -194,10 +197,27 @@ const projectForm = async (projectName: string, packageManager: PackageManager, 
 
 		progressBar.stop();
 
-		console.log(chalk.green("Project created successfully!"));
-		console.log("Run the following commands to start the project:");
-		console.log(chalk.bold(`cd ${answer.name}`));
-		console.log(chalk.bold(`${answer.packageManager} dev`));
+		console.log("\n");
+		console.log("🐎 Project ", chalk.green(projName), "created successfully!");
+		console.log("🤙 Run the following commands to start the project:\n");
+		
+		console.log(chalk.bold.gray(`$ cd ${answer.name}`));
+		switch (answer.packageManager) {
+			case "npm":
+				console.log(chalk.bold.gray("$ npm run dev"));
+				break;
+			case "yarn":
+				console.log(chalk.bold.gray("$ yarn dev"));
+				break;
+			case "pnpm":
+				console.log(chalk.bold.gray("$ pnpm run dev"));
+				break;
+		}
+
+		console.log("\n");
+		console.log(chalk.bold.green(centerText("Happy coding!")));
+		console.log(chalk.bold.gray(centerText("Please consider donating to support the project.\n")));
+		console.log(chalk.bold.white(centerText("💖 Sponsor: https://github.com/sponsors/expressots")));
 	}
 };
 

@@ -7,7 +7,7 @@ type CommandModuleArgs = {};
 const infoProject = (): CommandModule<CommandModuleArgs, any> => {
 	return {
 		command: "info",
-		describe: "Displays information about the ExpressoTS project",
+		describe: "Displays project details",
 		aliases: ["i"],
 		handler: async () => {
       await infoForm();
