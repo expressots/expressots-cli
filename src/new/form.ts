@@ -6,6 +6,7 @@ import { Presets, SingleBar } from "cli-progress";
 import fs from "node:fs";
 import path from "node:path";
 import { centerText } from "../utils/center-text";
+import { type } from "os";
 
 async function packageManagerInstall({
 	packageManager,
@@ -80,15 +81,15 @@ enum Template {
 }
 
 const enum PackageManager {
-	npm,
-	yarn,
-	pnpm,
+	npm = "npm",
+	yarn = "yarn",
+	pnpm = "pnpm"
 }
 
 const projectForm = async (projectName: string, packageManager: PackageManager, template: keyof typeof Template, directory: string): Promise<void> => {
 	let answer: any;
 	const projName: string = projectName;
-
+	
 	if (packageManager && template) {
 		answer = {
 			name: projectName,

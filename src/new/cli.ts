@@ -6,7 +6,7 @@ type CommandModuleArgs = {};
 const createProject = (): CommandModule<CommandModuleArgs, any> => {
 	return {
 		command: "new <project-name> [package-manager] [template] [directory]",
-		describe: "Create a new Expresso TS project",
+		describe: "Create a new project",
 		builder: (yargs: Argv): Argv => {
 			yargs
 			.positional("project-name", {
