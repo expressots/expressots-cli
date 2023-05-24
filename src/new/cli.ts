@@ -1,8 +1,8 @@
-import { CommandModule, Argv } from "yargs";
+import { Argv, CommandModule } from "yargs";
 import { projectForm } from "./form";
 
 type CommandModuleArgs = {};
-
+	
 const createProject = (): CommandModule<CommandModuleArgs, any> => {
 	return {
 		command: "new <project-name> [package-manager] [template] [directory]",
@@ -33,10 +33,11 @@ const createProject = (): CommandModule<CommandModuleArgs, any> => {
 
 			return yargs;
 		},
-		handler: async ({projectName, packageManager, template, directory}) => {
-			return await projectForm(projectName, packageManager, template, directory);
+		handler: async ({projectName, packageManager , template, directory}) => {
+			return await projectForm(projectName, [packageManager, template, directory]);
 		},
 	};
 };
 
 export { createProject };
+ 
