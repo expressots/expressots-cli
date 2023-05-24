@@ -8,6 +8,8 @@ import { createProject } from "./new";
 
 export const CLI_VERSION = "1.2.2";
 
+console.log(`\n[🐎 Expressots]\n`);
+
 yargs(hideBin(process.argv))
 	.scriptName("expressots")
 	.command(createProject())
@@ -21,8 +23,8 @@ yargs(hideBin(process.argv))
 	.example("$0 info", "Show CLI details")
 	.demandCommand(1, "You need at least one command before moving on")
 	.epilog("For more information: \n" +
-	"🌐 visit https://expresso-ts.com\n" +
-	"💖 Sponsor: https://github.com/sponsors/expressots")
+	"🌐 visit:\t https://expresso-ts.com\n" +
+	"💖 Sponsor:\t https://github.com/sponsors/expressots")
 	.help("help", "Show command help")
 	.alias("h", "help")
 	.version(false)

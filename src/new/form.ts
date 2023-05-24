@@ -6,6 +6,7 @@ import inquirer from "inquirer";
 import fs from "node:fs";
 import path from "node:path";
 import { centerText } from "../utils/center-text";
+import { printError } from "../utils/cli-ui";
 
 async function packageManagerInstall({
 	packageManager,
@@ -52,7 +53,6 @@ async function checkIfPackageManagerExists(packageManager: string) {
 	}
 }
 
-// Change the package.json name to the user's project name
 function changePackageName({
 	directory,
 	name,
@@ -106,6 +106,8 @@ const projectForm = async (projectName: string, args: any[]): Promise<void> => {
 		}
 	}
 
+	console.log(packageManager, template, directory)
+
 	if (packageManager && template) {
 		answer = {
 			name: projectName,
@@ -151,8 +153,8 @@ const projectForm = async (projectName: string, args: any[]): Promise<void> => {
 	if (directory) {
 		if(!fs.existsSync(path.join(directory, answer.name))) {
 			answer.name = path.join(directory, answer.name);
-		} else { // if not exist return error
-			console.error(chalk.red(`There is already a project with this name in the directory: ${directory}`));
+		} else {
+			printError("Directory already exists", directory);
 			process.exit(1);
 		}
 	}
@@ -165,6 +167,7 @@ const projectForm = async (projectName: string, args: any[]): Promise<void> => {
 
 	if (answer.confirm) {
 		await checkIfPackageManagerExists(answer.packageManager);
+		console.log("\n");
 		const progressBar = new SingleBar(
 			{
 				format:
@@ -187,7 +190,7 @@ const projectForm = async (projectName: string, args: any[]): Promise<void> => {
 	
 			await emitter.clone(answer.name);
 		} catch (err: any) {
-			console.log(chalk.red("\n\nError: Project already exists or Folder is not empty 😞"));
+			printError("Project already exists or Folder is not empty", answer.name);
 			process.exit(1);
 		}
 		
@@ -195,13 +198,13 @@ const projectForm = async (projectName: string, args: any[]): Promise<void> => {
 			doing: "Installing dependencies",
 		});
 
-		
 		await packageManagerInstall({
 			packageManager: answer.packageManager,
 			directory: answer.name,
 			progressBar,
 		});
 
+		
 		progressBar.update(90);
 
 		changePackageName({
