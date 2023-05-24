@@ -106,8 +106,6 @@ const projectForm = async (projectName: string, args: any[]): Promise<void> => {
 		}
 	}
 
-	console.log(packageManager, template, directory)
-
 	if (packageManager && template) {
 		answer = {
 			name: projectName,
