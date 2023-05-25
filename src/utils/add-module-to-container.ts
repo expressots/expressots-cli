@@ -4,13 +4,13 @@ import chalk from 'chalk';
 
 async function addModuleToContainer(name: string) {
 	const moduleName = name[0].toUpperCase() + name.slice(1);
-	const {opinionated, sourceRoot } = await Compiler.loadConfig();
+	const {opinionated} = await Compiler.loadConfig();
 
 	let usecaseDir: string;
 	if (opinionated) {
 		usecaseDir = `@useCases/`;
 	} else {
-		usecaseDir = "";
+		usecaseDir = "./";
 	}
 
   const fileContent = await fs.promises.readFile('./src/app-container.ts', 'utf8');

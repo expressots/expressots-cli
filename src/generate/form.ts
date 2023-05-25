@@ -112,7 +112,7 @@ export const createTemplate = async ({
 				template: {
 					path: `./templates/module.tpl`,
 					data: {
-						moduleName: moduleName,
+						moduleName: moduleName[0].toUpperCase() + moduleName.slice(1),
 						className,
 						path: `${path.split("/")[1]}/${file.slice(0, file.lastIndexOf('.'))}`
 					},
