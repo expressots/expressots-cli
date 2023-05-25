@@ -3,6 +3,7 @@ import path from "path";
 import fs from "fs";
 import os from "os";
 import { CLI_VERSION } from "../cli";
+import { printError } from "../utils/cli-ui";
 
 function getInfosFromPackage() {
 	try {
@@ -19,12 +20,8 @@ function getInfosFromPackage() {
 		console.log(chalk.bold(`\tDescription: ${packageJson.description}`));
 		console.log(chalk.bold(`\tVersion: ${packageJson.version}`));
 		console.log(chalk.bold(`\tAuthor: ${packageJson.author}`));
-
-		console.log(chalk.green("CLI Version:"));
-		console.log(chalk.bold(`\tCurrent version: v${CLI_VERSION}`));
 	} catch (error) {
-		console.log(chalk.green("\tExpressoTS Project:"));
-		console.log(chalk.bold("\tpackage.json not found!"));
+		printError("No project information available.", "package.json not found!")
 	}
 }
 
@@ -32,6 +29,9 @@ const infoForm = async (): Promise<void> => {
 	console.log(chalk.green("System informations:"));
 	console.log(chalk.bold(`\tOS Version: ${os.version()}`));
 	console.log(chalk.bold(`\tNodeJS version: ${process.version}`));
+
+	console.log(chalk.green("CLI Version:"));
+	console.log(chalk.bold(`\tCurrent version: v${CLI_VERSION}`));
 
 	getInfosFromPackage();
 };

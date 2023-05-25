@@ -48,7 +48,7 @@ async function checkIfPackageManagerExists(packageManager: string) {
 		execSync(`${packageManager} --version`);
 		return true;
 	} catch (error) {
-		console.log(chalk.red(`\n[Error]: Package manager \`${packageManager}\` is not installed 😞`));
+		printError("Package manager not found!", packageManager);
 		process.exit(1);
 	}
 }
@@ -207,7 +207,7 @@ const projectForm = async (projectName: string, args: any[]): Promise<void> => {
 
 		changePackageName({
 			directory: answer.name,
-			name: answer.name,
+			name: projName,
 		});
 
 		progressBar.update(100);
@@ -215,7 +215,7 @@ const projectForm = async (projectName: string, args: any[]): Promise<void> => {
 		progressBar.stop();
 
 		console.log("\n");
-		console.log("🐎 Project ", chalk.green(projName), "created successfully!");
+		console.log("🐎 Project ",chalk.green(projName), "created successfully!");
 		console.log("🤙 Run the following commands to start the project:\n");
 		
 		console.log(chalk.bold.gray(`$ cd ${answer.name}`));

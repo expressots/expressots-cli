@@ -29,7 +29,9 @@ const createProject = (): CommandModule<CommandModuleArgs, any> => {
 				describe: "The directory for new project",
 				type: "string",
 				alias: "d",
-			});
+			})
+			.implies("package-manager", "template")
+			.implies("template", "package-manager")
 
 			return yargs;
 		},
