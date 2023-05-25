@@ -8,6 +8,7 @@ import Compiler from "../utils/compiler";
 import { Pattern } from "../types";
 import { addControllerToModule } from "../utils/add-controller-to-module";
 import { verifyIfFileExists } from "../utils/verify-file-exists";
+import { addModuleToContainer } from "../utils/add-module-to-container";
 
 function getFileNameWithoutExtension(filePath: string) {
 	return filePath.split('.')[0];
@@ -25,6 +26,7 @@ const messageColors = {
 	dto: (text: string) => chalk.blue(text),
 	provider: (text: string) => chalk.yellow(text),
 	module: (text: string) => chalk.red(text),
+	entity: (text: string) => chalk.gray(text),
 } as { [key: string]: (text: string) => string }
 
 export const createTemplate = async ({
@@ -32,12 +34,16 @@ export const createTemplate = async ({
 	path: target,
 	method,
 }: CreateTemplateProps) => {
-	const withinSource = schematicFolder(schematic);
+	const {opinionated, sourceRoot } = await Compiler.loadConfig();
+	let withinSource = schematicFolder(schematic);
+
 	if (!withinSource) return;
 
-	const { path, file, className } = await splitTarget({ target, schematic });
+	if (!opinionated) {
+		withinSource = "";
+	}
 
-	const { sourceRoot } = await Compiler.loadConfig();
+	const { path, file, className } = await splitTarget({ target, schematic });
 
 	const usecaseDir = `${sourceRoot}/${withinSource}`;
 
@@ -97,6 +103,7 @@ export const createTemplate = async ({
 			const controllerPath = `./${path.split("/")[1]}/${file.slice(0, file.lastIndexOf('.'))}`
 
 			await addControllerToModule(`${usecaseDir}/${moduleName}/${moduleName}.module.ts`, `${className}Controller`, controllerPath);
+			await addModuleToContainer( moduleName);
 		} else {
 			console.log(messageColors.module(`> [module] Creating ${moduleName}.module.ts...`));
 
@@ -105,12 +112,14 @@ export const createTemplate = async ({
 				template: {
 					path: `./templates/module.tpl`,
 					data: {
-						moduleName: moduleName[0].toUpperCase() + moduleName.slice(1),
+						moduleName: moduleName,
 						className,
 						path: `${path.split("/")[1]}/${file.slice(0, file.lastIndexOf('.'))}`
 					},
 				},
 			});
+
+			await addModuleToContainer( moduleName);
 		}
 	}
 
@@ -160,6 +169,8 @@ const schematicFolder = (schematic: string): string | undefined => {
 			return "useCases";
 		case "provider":
 			return "providers";
+		case "entity":
+			return "entities"
 	}
 
 	return undefined;
