@@ -1,4 +1,4 @@
-import * as nodePath from "path";
+import path, * as nodePath from "path";
 import { mkdirSync, readFileSync } from "node:fs";
 import { render } from "mustache";
 import { writeFileSync, existsSync } from "fs";
@@ -9,6 +9,7 @@ import { Pattern } from "../types";
 import { addControllerToModule } from "../utils/add-controller-to-module";
 import { verifyIfFileExists } from "../utils/verify-file-exists";
 import { addModuleToContainer } from "../utils/add-module-to-container";
+import { printError } from "../utils/cli-ui";
 
 function getFileNameWithoutExtension(filePath: string) {
 	return filePath.split('.')[0];
@@ -34,18 +35,25 @@ export const createTemplate = async ({
 	path: target,
 	method,
 }: CreateTemplateProps) => {
-	const {opinionated, sourceRoot } = await Compiler.loadConfig();
-	let withinSource = schematicFolder(schematic);
+	const { opinionated, sourceRoot } = await Compiler.loadConfig();
 
-	if (!withinSource) return;
+	if (sourceRoot === "") {
+		printError("You must specify a source root in your expressots.config.ts","sourceRoot");
+		process.exit(1);
+	}
 
-	if (!opinionated) {
-		withinSource = "";
+	let folderMatch = "";
+
+	if (opinionated) {
+		folderMatch = schematicFolder(schematic);
+	} else {
+		folderMatch = "";
 	}
 
 	const { path, file, className } = await splitTarget({ target, schematic });
+	console.log({ path, file, className });
 
-	const usecaseDir = `${sourceRoot}/${withinSource}`;
+	const usecaseDir = `${sourceRoot}/${folderMatch}`;
 
 	await verifyIfFileExists(`${usecaseDir}/${path}${file}`)
 
@@ -53,7 +61,7 @@ export const createTemplate = async ({
 
 	if (schematic !== "service") {
 		console.log(messageColors[schematic](`> [${schematic}] Creating ${file}...`));
-
+		
 		writeTemplate({
 			outputPath: `${usecaseDir}/${path}${file}`,
 			template: {
@@ -94,6 +102,7 @@ export const createTemplate = async ({
 		}
 	}
 
+	// Module generation
 	const moduleName = path.split("/")[0];
 
 	if (["controller", "service"].includes(schematic)) {
@@ -103,7 +112,6 @@ export const createTemplate = async ({
 			const controllerPath = `./${path.split("/")[1]}/${file.slice(0, file.lastIndexOf('.'))}`
 
 			await addControllerToModule(`${usecaseDir}/${moduleName}/${moduleName}.module.ts`, `${className}Controller`, controllerPath);
-			await addModuleToContainer( moduleName);
 		} else {
 			console.log(messageColors.module(`> [module] Creating ${moduleName}.module.ts...`));
 
@@ -122,7 +130,7 @@ export const createTemplate = async ({
 			await addModuleToContainer( moduleName);
 		}
 	}
-
+	console.log(chalk.green(`> ${file.split(".")[0]} ${schematic} created! 🚀`));
 	return file;
 };
 
@@ -187,8 +195,13 @@ const splitTarget = async ({
 	file: string;
 	className: string;
 }> => {
-	if (schematic === "provider")
+	/* if (schematic === "provider") {
 		return await splitTargetProviderEdgeCase({ target, schematic });
+	} */
+
+	if (target.includes("/") || target.includes("\\") || target.includes("//")) {
+		return await splitTargetProviderEdgeCase({ target, schematic });
+	}
 
 	if (schematic === "service") schematic = "controller"; // Anything just to generate
 

@@ -46,6 +46,7 @@
     "chalk-animation": "^1",
     "cli-progress": "^3.11.2",
     "degit": "^2.8.4",
+    "glob": "^10.2.6",
     "inquirer": "^8.0.0",
     "mustache": "^4.2.0",
     "ts-node": "^10.9.1",
