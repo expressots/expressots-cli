@@ -50,13 +50,12 @@ export const createTemplate = async ({
 		folderMatch = "";
 	}
 
-	const { path, file, className } = await splitTarget({ target, schematic });
-	console.log({ path, file, className });
-
+	const { path, file, className, moduleName, modulePath } = await splitTarget({ target, schematic });
+	
 	const usecaseDir = `${sourceRoot}/${folderMatch}`;
-
+	
 	await verifyIfFileExists(`${usecaseDir}/${path}${file}`)
-
+	
 	mkdirSync(`${usecaseDir}/${path}`, { recursive: true });
 
 	if (schematic !== "service") {
@@ -77,7 +76,7 @@ export const createTemplate = async ({
 	} else {
 		for await (const resource of ["controller-service", "usecase", "dto"]) {
 			const currentSchematic = resource.replace("controller-service", "controller");
-
+		
 			const schematicFile = file.replace(
 				`controller.ts`,
 				`${currentSchematic}.ts`,
@@ -86,7 +85,7 @@ export const createTemplate = async ({
 			console.log(messageColors[currentSchematic](`> [${currentSchematic}] Creating ${schematicFile}...`));
 
 			writeTemplate({
-				outputPath: `${usecaseDir}/${path}${schematicFile}`,
+				outputPath: `${usecaseDir}/${path}/${schematicFile}`,
 				template: {
 					path: `./templates/${resource}.tpl`,
 					data: {
@@ -103,20 +102,19 @@ export const createTemplate = async ({
 	}
 
 	// Module generation
-	const moduleName = path.split("/")[0];
-
 	if (["controller", "service"].includes(schematic)) {
-		if (existsSync(`${usecaseDir}/${moduleName}/${moduleName}.module.ts`)) {
+		
+		if (existsSync(`${usecaseDir}/${modulePath}/${moduleName}.module.ts`)) {
 			console.log(messageColors.module(`> [module] Adding controller to ${moduleName}.module.ts...`));
 
 			const controllerPath = `./${path.split("/")[1]}/${file.slice(0, file.lastIndexOf('.'))}`
 
-			await addControllerToModule(`${usecaseDir}/${moduleName}/${moduleName}.module.ts`, `${className}Controller`, controllerPath);
+			await addControllerToModule(`${usecaseDir}/${modulePath}/${moduleName}.module.ts`, `${className}Controller`, controllerPath);
 		} else {
 			console.log(messageColors.module(`> [module] Creating ${moduleName}.module.ts...`));
 
 			writeTemplate({
-				outputPath: `${usecaseDir}/${moduleName}/${moduleName}.module.ts`,
+				outputPath: `${usecaseDir}/${modulePath}/${moduleName}.module.ts`,
 				template: {
 					path: `./templates/module.tpl`,
 					data: {
@@ -194,19 +192,71 @@ const splitTarget = async ({
 	path: string;
 	file: string;
 	className: string;
+	moduleName: string;
+	modulePath: string;
 }> => {
+
+	let pathContent: string[] = [];
+	const endsWithSlash: boolean = target.endsWith("/");
+	let path = "";
+	let fileName = "";
+	let module = "";
+	let modulePath = "";
+
+	// Check if the user is using the non-opinionated mode
+	if (!(await Compiler.loadConfig()).opinionated) {
+
+		if (target.includes("/") || target.includes("\\") || target.includes("//")) {
+			pathContent = target.split("/").filter((item) => item !== "");
+
+			if (schematic === "service") {
+				schematic = "controller";
+				if (pathContent.length > 4) {
+					printError("Max path depth is 4.", pathContent.join("/"));
+					process.exit(1);
+				}
+			
+				if (endsWithSlash) {
+					fileName = pathContent[pathContent.length-1];
+					path = pathContent.join("/");
+					module = pathContent[pathContent.length-2];
+					modulePath = pathContent.slice(0,-1).join("/");
+				} else {
+					fileName = pathContent[pathContent.length-1];
+					path = pathContent.slice(0,-1).join("/");
+					module = pathContent[pathContent.length-3];
+					modulePath = pathContent.slice(0,-2).join("/");
+				}
+			
+				return {
+					path,
+					file: `${await getNameWithScaffoldPattern(fileName)}.${schematic}.ts`,
+					className: anyCaseToPascalCase(fileName),
+					moduleName: module,
+					modulePath
+				}
+			} else {
+				return await splitTargetProviderEdgeCase({ target, schematic });
+			}
+		}
+	}
+
+
+
+
 	/* if (schematic === "provider") {
 		return await splitTargetProviderEdgeCase({ target, schematic });
 	} */
 
-	if (target.includes("/") || target.includes("\\") || target.includes("//")) {
+	/* if (target.includes("/") || target.includes("\\") || target.includes("//")) {
 		return await splitTargetProviderEdgeCase({ target, schematic });
-	}
+	} */
 
 	if (schematic === "service") schematic = "controller"; // Anything just to generate
 
 	// 1. Extract the name (first part of the target)
 	const [name, ...remainingPath] = target.split("/");
+	console.log({ name, remainingPath });
 
 	// 2. Check if the name is camelCase or kebab-case
 	const camelCaseRegex = /[A-Z]/;
@@ -219,11 +269,15 @@ const splitTarget = async ({
 		const [wordName, ...path] = name
 			?.split(isCamelCase ? /(?=[A-Z])/ : kebabCaseRegex)
 			.map((word) => word.toLowerCase());
+			console.log(name);
+			console.log({ wordName, path });
 
 		return {
 			path: `${wordName}/${pathEdgeCase(path)}${pathEdgeCase(remainingPath)}`,
 			file: `${await getNameWithScaffoldPattern(name)}.${schematic}.ts`,
 			className: anyCaseToPascalCase(name),
+			moduleName: module,
+			modulePath
 		};
 	}
 
@@ -232,6 +286,8 @@ const splitTarget = async ({
 		path: `${name}/${pathEdgeCase(remainingPath)}`,
 		file: `${await getNameWithScaffoldPattern(name)}.${schematic}.ts`,
 		className: anyCaseToPascalCase(name),
+		moduleName: module,
+		modulePath
 	};
 };
 
