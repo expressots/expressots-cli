@@ -59,10 +59,11 @@ export const createTemplate = async ({
 	mkdirSync(`${usecaseDir}/${path}`, { recursive: true });
 
 	if (schematic !== "service") {
+
 		console.log(messageColors[schematic](`> [${schematic}] Creating ${file}...`));
 		
 		writeTemplate({
-			outputPath: `${usecaseDir}/${path}${file}`,
+			outputPath: `${usecaseDir}/${path}/${file}`,
 			template: {
 				path: `./templates/${schematic}.tpl`,
 				data: {
@@ -104,17 +105,33 @@ export const createTemplate = async ({
 	// Module generation
 	if (["controller", "service"].includes(schematic)) {
 		
-		if (existsSync(`${usecaseDir}/${modulePath}/${moduleName}.module.ts`)) {
+		let moduleExist = false;
+		let moduleOutPath = "";
+		if (target.includes("/") || target.includes("\\") || target.includes("//")) {
+			moduleExist = existsSync(`${usecaseDir}/${modulePath}/${moduleName}.module.ts`);
+			moduleOutPath = `${usecaseDir}/${modulePath}/${moduleName}.module.ts`;
+		} else {
+			moduleExist = existsSync(`${usecaseDir}/${moduleName}/${moduleName}.module.ts`);
+			moduleOutPath = `${usecaseDir}/${moduleName}/${moduleName}.module.ts`;
+		}
+
+		if (moduleExist) {
+			
 			console.log(messageColors.module(`> [module] Adding controller to ${moduleName}.module.ts...`));
 
 			const controllerPath = `./${path.split("/")[1]}/${file.slice(0, file.lastIndexOf('.'))}`
 
-			await addControllerToModule(`${usecaseDir}/${modulePath}/${moduleName}.module.ts`, `${className}Controller`, controllerPath);
+			if (target.includes("/") || target.includes("\\") || target.includes("//")) {
+				await addControllerToModule(`${usecaseDir}/${modulePath}/${moduleName}.module.ts`, `${className}Controller`, controllerPath);
+			} else {
+				console.log(usecaseDir,moduleName.trim());
+				await addControllerToModule(`${usecaseDir}/${moduleName}/${moduleName}.module.ts`, `${className}Controller`, controllerPath);
+			}
 		} else {
 			console.log(messageColors.module(`> [module] Creating ${moduleName}.module.ts...`));
 
 			writeTemplate({
-				outputPath: `${usecaseDir}/${modulePath}/${moduleName}.module.ts`,
+				outputPath: moduleOutPath,
 				template: {
 					path: `./templates/module.tpl`,
 					data: {
@@ -130,6 +147,87 @@ export const createTemplate = async ({
 	}
 	console.log(chalk.green(`> ${file.split(".")[0]} ${schematic} created! 🚀`));
 	return file;
+};
+
+const splitTarget = async ({
+	target,
+	schematic,
+}: {
+	target: string;
+	schematic: string;
+}): Promise<{
+	path: string;
+	file: string;
+	className: string;
+	moduleName: string;
+	modulePath: string;
+}> => {
+
+	let pathContent: string[] = [];
+	const endsWithSlash: boolean = target.endsWith("/");
+	let path = "";
+	let fileName = "";
+	let module = "";
+	let modulePath = "";
+
+	if (target.includes("/") || target.includes("\\") || target.includes("//")) {
+		pathContent = target.split("/").filter((item) => item !== "");
+		if (schematic === "service") schematic = "controller";
+		if (schematic === "service" || schematic === "controller" && pathContent.length > 4) {
+			printError("Max path depth is 4.", pathContent.join("/"));
+			process.exit(1);
+		}
+		
+		if (endsWithSlash) {
+			fileName = pathContent[pathContent.length-1];
+			path = pathContent.join("/");
+			module = pathContent[pathContent.length-2];
+			modulePath = pathContent.slice(0,-1).join("/");
+		} else {
+			fileName = pathContent[pathContent.length-1];
+			path = pathContent.slice(0,-1).join("/");
+			module = pathContent[pathContent.length-3];
+			modulePath = pathContent.slice(0,-2).join("/");
+		}
+		return {
+			path,
+			file: `${await getNameWithScaffoldPattern(fileName)}.${schematic}.ts`,
+			className: anyCaseToPascalCase(fileName),
+			moduleName: module,
+			modulePath
+		}
+	} else {
+		if (schematic === "service") schematic = "controller";
+		// 1. Extract the name (first part of the target)
+		const [name, ...remainingPath] = target.split("/");
+		// 2. Check if the name is camelCase or kebab-case
+		const camelCaseRegex = /[A-Z]/;
+		const kebabCaseRegex = /[_\-\s]+/;
+		const isCamelCase = camelCaseRegex.test(name);
+		const isKebabCase = kebabCaseRegex.test(name);
+		if (isCamelCase || isKebabCase) {
+			const [wordName, ...path] = name
+				?.split(isCamelCase ? /(?=[A-Z])/ : kebabCaseRegex)
+				.map((word) => word.toLowerCase());
+			return {
+				path: `${wordName}/${pathEdgeCase(path)}${pathEdgeCase(remainingPath)}`,
+				file: `${await getNameWithScaffoldPattern(name)}.${schematic}.ts`,
+				className: anyCaseToPascalCase(name),
+				moduleName: wordName,
+				modulePath
+			};
+		}
+
+		// 3. Return the base case
+		return {
+			path: `${name}/${pathEdgeCase(remainingPath)}`,
+			file: `${await getNameWithScaffoldPattern(name)}.${schematic}.ts`,
+			className: anyCaseToPascalCase(name),
+			moduleName: module,
+			modulePath
+		};
+	}
+	
 };
 
 const getHttpMethod = (method: string) : string => {
@@ -182,114 +280,6 @@ const schematicFolder = (schematic: string): string | undefined => {
 	return undefined;
 };
 
-const splitTarget = async ({
-	target,
-	schematic,
-}: {
-	target: string;
-	schematic: string;
-}): Promise<{
-	path: string;
-	file: string;
-	className: string;
-	moduleName: string;
-	modulePath: string;
-}> => {
-
-	let pathContent: string[] = [];
-	const endsWithSlash: boolean = target.endsWith("/");
-	let path = "";
-	let fileName = "";
-	let module = "";
-	let modulePath = "";
-
-	// Check if the user is using the non-opinionated mode
-	if (!(await Compiler.loadConfig()).opinionated) {
-
-		if (target.includes("/") || target.includes("\\") || target.includes("//")) {
-			pathContent = target.split("/").filter((item) => item !== "");
-
-			if (schematic === "service") {
-				schematic = "controller";
-				if (pathContent.length > 4) {
-					printError("Max path depth is 4.", pathContent.join("/"));
-					process.exit(1);
-				}
-			
-				if (endsWithSlash) {
-					fileName = pathContent[pathContent.length-1];
-					path = pathContent.join("/");
-					module = pathContent[pathContent.length-2];
-					modulePath = pathContent.slice(0,-1).join("/");
-				} else {
-					fileName = pathContent[pathContent.length-1];
-					path = pathContent.slice(0,-1).join("/");
-					module = pathContent[pathContent.length-3];
-					modulePath = pathContent.slice(0,-2).join("/");
-				}
-			
-				return {
-					path,
-					file: `${await getNameWithScaffoldPattern(fileName)}.${schematic}.ts`,
-					className: anyCaseToPascalCase(fileName),
-					moduleName: module,
-					modulePath
-				}
-			} else {
-				return await splitTargetProviderEdgeCase({ target, schematic });
-			}
-		}
-	}
-
-
-
-
-	/* if (schematic === "provider") {
-		return await splitTargetProviderEdgeCase({ target, schematic });
-	} */
-
-	/* if (target.includes("/") || target.includes("\\") || target.includes("//")) {
-		return await splitTargetProviderEdgeCase({ target, schematic });
-	} */
-
-	if (schematic === "service") schematic = "controller"; // Anything just to generate
-
-	// 1. Extract the name (first part of the target)
-	const [name, ...remainingPath] = target.split("/");
-	console.log({ name, remainingPath });
-
-	// 2. Check if the name is camelCase or kebab-case
-	const camelCaseRegex = /[A-Z]/;
-	const kebabCaseRegex = /[_\-\s]+/;
-
-	const isCamelCase = camelCaseRegex.test(name);
-	const isKebabCase = kebabCaseRegex.test(name);
-
-	if (isCamelCase || isKebabCase) {
-		const [wordName, ...path] = name
-			?.split(isCamelCase ? /(?=[A-Z])/ : kebabCaseRegex)
-			.map((word) => word.toLowerCase());
-			console.log(name);
-			console.log({ wordName, path });
-
-		return {
-			path: `${wordName}/${pathEdgeCase(path)}${pathEdgeCase(remainingPath)}`,
-			file: `${await getNameWithScaffoldPattern(name)}.${schematic}.ts`,
-			className: anyCaseToPascalCase(name),
-			moduleName: module,
-			modulePath
-		};
-	}
-
-	// 3. Return the base case
-	return {
-		path: `${name}/${pathEdgeCase(remainingPath)}`,
-		file: `${await getNameWithScaffoldPattern(name)}.${schematic}.ts`,
-		className: anyCaseToPascalCase(name),
-		moduleName: module,
-		modulePath
-	};
-};
 
 const splitTargetProviderEdgeCase = async ({
 	target,
