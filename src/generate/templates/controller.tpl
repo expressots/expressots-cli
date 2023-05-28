@@ -1,5 +1,6 @@
 import { BaseController } from "@expressots/core";
 import { controller, {{method}}, response } from "inversify-express-utils";
+import { Response } from "express";
 
 @controller("/{{{route}}}")
 class {{className}}Controller extends BaseController {
@@ -9,7 +10,7 @@ class {{className}}Controller extends BaseController {
 	}
 
   @{{method}}("/")
-  execute(@response() res: any) {
+  execute(@response() res: Response) {
     return res.send("Hello Expresso TS");
   }
 }

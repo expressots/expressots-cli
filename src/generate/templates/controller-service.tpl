@@ -1,5 +1,6 @@
 import { BaseController, StatusCode } from "@expressots/core";
 import { controller, {{method}}, response } from "inversify-express-utils";
+import { Response } from "express";
 import { {{className}}UseCase } from "./{{fileName}}.usecase";
 import { I{{className}}ResponseDTO } from "./{{fileName}}.dto";
 
@@ -11,12 +12,12 @@ class {{className}}Controller extends BaseController {
 	}
 
   @{{method}}("/")
-  execute(@response() res: any): I{{className}}ResponseDTO {
+  execute(@response() res: Response): I{{className}}ResponseDTO {
     return this.callUseCase(
             this.{{useCase}}UseCase.execute(),
             res,
             StatusCode.OK,
-        );
+    );
   }
 }
 
