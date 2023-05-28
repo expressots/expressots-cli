@@ -59,7 +59,6 @@ export const createTemplate = async ({
 	mkdirSync(`${usecaseDir}/${path}`, { recursive: true });
 
 	if (schematic !== "service") {
-
 		console.log(messageColors[schematic](`> [${schematic}] Creating ${file}...`));
 		
 		writeTemplate({
@@ -84,11 +83,26 @@ export const createTemplate = async ({
 			);
 
 			console.log(messageColors[currentSchematic](`> [${currentSchematic}] Creating ${schematicFile}...`));
+			
+			let templateBasedMethod = "";
+			if (method) {
+				if (resource === "controller-service" || resource === "controller") {
+					templateBasedMethod = `./templates/${resource}-${method}.tpl`;
+				} else {
+					templateBasedMethod = `./templates/${resource}.tpl`;
+				}
+
+				if (resource === "usecase") {
+					templateBasedMethod = `./templates/${resource}-op.tpl`;
+				}
+			} else {
+				templateBasedMethod = `./templates/${resource}.tpl`;
+			}
 
 			writeTemplate({
 				outputPath: `${usecaseDir}/${path}/${schematicFile}`,
 				template: {
-					path: `./templates/${resource}.tpl`,
+					path: templateBasedMethod,
 					data: {
 						className,
 						fileName: getFileNameWithoutExtension(file),
@@ -124,7 +138,6 @@ export const createTemplate = async ({
 			if (target.includes("/") || target.includes("\\") || target.includes("//")) {
 				await addControllerToModule(`${usecaseDir}/${modulePath}/${moduleName}.module.ts`, `${className}Controller`, controllerPath);
 			} else {
-				console.log(usecaseDir,moduleName.trim());
 				await addControllerToModule(`${usecaseDir}/${moduleName}/${moduleName}.module.ts`, `${className}Controller`, controllerPath);
 			}
 		} else {
