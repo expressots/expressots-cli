@@ -54,7 +54,7 @@ export const createTemplate = async ({
 	
 	const usecaseDir = `${sourceRoot}/${folderMatch}`;
 	
-	await verifyIfFileExists(`${usecaseDir}/${path}${file}`)
+	await verifyIfFileExists(`${usecaseDir}/${path}/${file}`)
 	
 	mkdirSync(`${usecaseDir}/${path}`, { recursive: true });
 
@@ -87,7 +87,8 @@ export const createTemplate = async ({
 			let templateBasedMethod = "";
 			if (method) {
 				if (resource === "controller-service" || resource === "controller") {
-					templateBasedMethod = `./templates/${resource}-${method}.tpl`;
+					if (method === "get") templateBasedMethod = `./templates/${resource}.tpl`;
+					else templateBasedMethod = `./templates/${resource}-${method}.tpl`;
 				} else {
 					templateBasedMethod = `./templates/${resource}.tpl`;
 				}
@@ -95,6 +96,12 @@ export const createTemplate = async ({
 				if (resource === "usecase") {
 					templateBasedMethod = `./templates/${resource}-op.tpl`;
 				}
+
+				if (resource === "usecase") {
+					if (method === "get") templateBasedMethod = `./templates/${resource}.tpl`;
+					if (method === "post") templateBasedMethod = `./templates/${resource}-${method}.tpl`;
+				}
+
 			} else {
 				templateBasedMethod = `./templates/${resource}.tpl`;
 			}
@@ -121,28 +128,45 @@ export const createTemplate = async ({
 		
 		let moduleExist = false;
 		let moduleOutPath = "";
+		
 		if (target.includes("/") || target.includes("\\") || target.includes("//")) {
 			moduleExist = existsSync(`${usecaseDir}/${modulePath}/${moduleName}.module.ts`);
 			moduleOutPath = `${usecaseDir}/${modulePath}/${moduleName}.module.ts`;
 		} else {
 			moduleExist = existsSync(`${usecaseDir}/${moduleName}/${moduleName}.module.ts`);
-			moduleOutPath = `${usecaseDir}/${moduleName}/${moduleName}.module.ts`;
+			if (modulePath === "") {
+				moduleExist = existsSync(`${usecaseDir}/${moduleName}.module.ts`);
+				moduleOutPath = `${usecaseDir}/${moduleName}.module.ts`;
+			} else {
+				moduleExist = existsSync(`${usecaseDir}/${moduleName}/${moduleName}.module.ts`);
+				moduleOutPath = `${usecaseDir}/${moduleName}/${moduleName}.module.ts`;
+			}
 		}
 
+		let controllerPath = "";
+		if (path === "") {
+			controllerPath = `${file.slice(0, file.lastIndexOf('.'))}`;
+		} else {
+			controllerPath = `${path}/${file.slice(0, file.lastIndexOf('.'))}`;
+		}
+	
 		if (moduleExist) {
 			
 			console.log(messageColors.module(`> [module] Adding controller to ${moduleName}.module.ts...`));
-
-			const controllerPath = `./${path.split("/")[1]}/${file.slice(0, file.lastIndexOf('.'))}`
-
+			
 			if (target.includes("/") || target.includes("\\") || target.includes("//")) {
 				await addControllerToModule(`${usecaseDir}/${modulePath}/${moduleName}.module.ts`, `${className}Controller`, controllerPath);
 			} else {
-				await addControllerToModule(`${usecaseDir}/${moduleName}/${moduleName}.module.ts`, `${className}Controller`, controllerPath);
+				if (modulePath === "") {
+					await addControllerToModule(`${usecaseDir}/${moduleName}.module.ts`, `${className}Controller`, controllerPath);
+				} else {
+					await addControllerToModule(`${usecaseDir}/${moduleName}/${moduleName}.module.ts`, `${className}Controller`, controllerPath);
+				}
 			}
 		} else {
+			console.log("====>", moduleName);
 			console.log(messageColors.module(`> [module] Creating ${moduleName}.module.ts...`));
-
+			
 			writeTemplate({
 				outputPath: moduleOutPath,
 				template: {
@@ -150,12 +174,12 @@ export const createTemplate = async ({
 					data: {
 						moduleName: moduleName[0].toUpperCase() + moduleName.slice(1),
 						className,
-						path: `${path.split("/")[1]}/${file.slice(0, file.lastIndexOf('.'))}`
+						path: controllerPath
 					},
 				},
 			});
 
-			await addModuleToContainer( moduleName);
+			await addModuleToContainer(moduleName, path);
 		}
 	}
 	console.log(chalk.green(`> ${file.split(".")[0]} ${schematic} created! 🚀`));
@@ -194,7 +218,7 @@ const splitTarget = async ({
 		if (endsWithSlash) {
 			fileName = pathContent[pathContent.length-1];
 			path = pathContent.join("/");
-			module = pathContent[pathContent.length-2];
+			module = (pathContent.length == 1)? pathContent[pathContent.length-1] : pathContent[pathContent.length-2];
 			modulePath = pathContent.slice(0,-1).join("/");
 		} else {
 			fileName = pathContent[pathContent.length-1];
@@ -202,6 +226,7 @@ const splitTarget = async ({
 			module = pathContent[pathContent.length-3];
 			modulePath = pathContent.slice(0,-2).join("/");
 		}
+		
 		return {
 			path,
 			file: `${await getNameWithScaffoldPattern(fileName)}.${schematic}.ts`,
@@ -233,11 +258,11 @@ const splitTarget = async ({
 
 		// 3. Return the base case
 		return {
-			path: `${name}/${pathEdgeCase(remainingPath)}`,
+			path: "",
 			file: `${await getNameWithScaffoldPattern(name)}.${schematic}.ts`,
 			className: anyCaseToPascalCase(name),
-			moduleName: module,
-			modulePath
+			moduleName: name,
+			modulePath: ""
 		};
 	}
 	

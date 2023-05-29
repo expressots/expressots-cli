@@ -6,7 +6,7 @@ class {{className}}UseCase {
 
     constructor() {}
 
-    execute(id: string, payload: I{{className}}RequestDTO): I{{className}}ResponseDTO {
+    execute(payload: I{{className}}RequestDTO): I{{className}}ResponseDTO {
         return "your use case";
     }
 }

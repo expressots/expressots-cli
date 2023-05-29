@@ -58,7 +58,7 @@ async function validateAppContainer(): Promise<AppContainerType> {
   }
 }
 
-async function addModuleToContainer(name: string) {
+async function addModuleToContainer(name: string, modulePath?: string) {
   const containerData: AppContainerType = await validateAppContainer();
 
 	const moduleName = (name[0].toUpperCase() + name.slice(1)).trimStart();
@@ -70,8 +70,15 @@ async function addModuleToContainer(name: string) {
 	} else {
 		usecaseDir = `./`;
 	}
+  
+  let newImport = "";
+  const modulePathRegex = /^[^/]=$/;
 
-	const newImport = `import { ${moduleName}Module } from "${usecaseDir}${name}/${name}.module.ts";`;
+  if (!modulePathRegex.test(modulePath)) {
+	    newImport = `import { ${moduleName}Module } from "${usecaseDir}${name}.module.ts";`;
+  } else {
+      newImport = `import { ${moduleName}Module } from "${usecaseDir}${name}/${name}.module.ts";`;
+  }
 
   if (containerData.imports.includes(newImport) && containerData.modules.includes(`${moduleName}Module`)) {
     return;

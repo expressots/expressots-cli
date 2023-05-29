@@ -17,9 +17,8 @@ class {{className}}Controller extends BaseController {
       @requestBody() payload: I{{className}}RequestDTO,
       @response() res: Response,
   ): I{{className}}ResponseDTO {
-      const data = {id, ...payload};
       return this.callUseCase(
-            this.{{useCase}}UseCase.execute(data),
+            this.{{useCase}}UseCase.execute(id, payload),
             res,
             StatusCode.OK,
       );
