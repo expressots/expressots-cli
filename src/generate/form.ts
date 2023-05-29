@@ -144,12 +144,16 @@ export const createTemplate = async ({
 		}
 
 		let controllerPath = "";
+		const pathCount = (path.split("/")).length;
+		
 		if (path === "") {
 			controllerPath = `${file.slice(0, file.lastIndexOf('.'))}`;
-		} else {
+		} else if (pathCount === 1) {
 			controllerPath = `${path}/${file.slice(0, file.lastIndexOf('.'))}`;
+		} else {
+			controllerPath = `${path.split("/")[1]}/${file.slice(0, file.lastIndexOf('.'))}`;
 		}
-	
+
 		if (moduleExist) {
 			
 			console.log(messageColors.module(`> [module] Adding controller to ${moduleName}.module.ts...`));
@@ -157,6 +161,7 @@ export const createTemplate = async ({
 			if (target.includes("/") || target.includes("\\") || target.includes("//")) {
 				await addControllerToModule(`${usecaseDir}/${modulePath}/${moduleName}.module.ts`, `${className}Controller`, controllerPath);
 			} else {
+				
 				if (modulePath === "") {
 					await addControllerToModule(`${usecaseDir}/${moduleName}.module.ts`, `${className}Controller`, controllerPath);
 				} else {
@@ -164,7 +169,6 @@ export const createTemplate = async ({
 				}
 			}
 		} else {
-			console.log("====>", moduleName);
 			console.log(messageColors.module(`> [module] Creating ${moduleName}.module.ts...`));
 			
 			writeTemplate({
@@ -179,7 +183,8 @@ export const createTemplate = async ({
 				},
 			});
 
-			await addModuleToContainer(moduleName, path);
+			//await addModuleToContainer(moduleName, path);
+			await addModuleToContainer(moduleName, modulePath, path);
 		}
 	}
 	console.log(chalk.green(`> ${file.split(".")[0]} ${schematic} created! 🚀`));
@@ -316,33 +321,6 @@ const schematicFolder = (schematic: string): string | undefined => {
 	}
 
 	return undefined;
-};
-
-
-const splitTargetProviderEdgeCase = async ({
-	target,
-	schematic,
-}: {
-	target: string;
-	schematic: string;
-}): Promise<{
-	path: string;
-	file: string;
-	className: string;
-}> => {
-	// Check if the last path ends with a slash, if it does it's supposed to be a folder
-	// and the name of the file will be the same as the folder
-	const isFolder = target.endsWith("/");
-	const path = target.split("/").slice(0, -1);
-	const name = isFolder
-		? path[path.length - 1]
-		: target.split("/")[target.split("/").length - 1];
-
-	return {
-		path: pathEdgeCase(path),
-		file: `${await getNameWithScaffoldPattern(name)}.${schematic}.ts`,
-		className: anyCaseToPascalCase(name),
-	};
 };
 
 const getNameWithScaffoldPattern = async (name: string) => {
