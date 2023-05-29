@@ -59,8 +59,6 @@ export const createTemplate = async ({
 	mkdirSync(`${usecaseDir}/${path}`, { recursive: true });
 
 	if (schematic !== "service") {
-		console.log(messageColors[schematic](`> [${schematic}] Creating ${file}...`));
-		
 		writeTemplate({
 			outputPath: `${usecaseDir}/${path}/${file}`,
 			template: {
@@ -82,7 +80,8 @@ export const createTemplate = async ({
 				`${currentSchematic}.ts`,
 			);
 
-			console.log(messageColors[currentSchematic](`> [${currentSchematic}] Creating ${schematicFile}...`));
+			console.log(" ",chalk.greenBright(`[${currentSchematic}]`.padEnd(14)), chalk.bold.white(`${schematicFile} created! ✔️`));
+			//console.log(messageColors[currentSchematic](`> [${currentSchematic}] Creating ${schematicFile}...`));
 			
 			let templateBasedMethod = "";
 			if (method) {
@@ -155,9 +154,6 @@ export const createTemplate = async ({
 		}
 
 		if (moduleExist) {
-			
-			console.log(messageColors.module(`> [module] Adding controller to ${moduleName}.module.ts...`));
-			
 			if (target.includes("/") || target.includes("\\") || target.includes("//")) {
 				await addControllerToModule(`${usecaseDir}/${modulePath}/${moduleName}.module.ts`, `${className}Controller`, controllerPath);
 			} else {
@@ -169,8 +165,6 @@ export const createTemplate = async ({
 				}
 			}
 		} else {
-			console.log(messageColors.module(`> [module] Creating ${moduleName}.module.ts...`));
-			
 			writeTemplate({
 				outputPath: moduleOutPath,
 				template: {
@@ -183,11 +177,16 @@ export const createTemplate = async ({
 				},
 			});
 
-			//await addModuleToContainer(moduleName, path);
+			console.log(" ",chalk.greenBright(`[module]`.padEnd(14)), chalk.bold.white(`${moduleName}.module created! ✔️`));
+
 			await addModuleToContainer(moduleName, modulePath, path);
 		}
 	}
-	console.log(chalk.green(`> ${file.split(".")[0]} ${schematic} created! 🚀`));
+	if (schematic === "service") {
+		console.log(" ",chalk.greenBright(`[${schematic}]`.padEnd(14)), chalk.bold.yellow(`${file.split(".")[0]} created! ✔️`));
+	} else {
+		console.log(" ",chalk.greenBright(`[${schematic}]`.padEnd(14)), chalk.bold.white(`${file.split(".")[0]} ${schematic} created! ✔️`));
+	}
 	return file;
 };
 

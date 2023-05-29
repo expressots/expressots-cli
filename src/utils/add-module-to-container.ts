@@ -96,9 +96,9 @@ async function addModuleToContainer(name: string, modulePath?: string, path?: st
 
   const newFileContent = [...containerData.imports, ...containerData.notImports]
   .join('\n').replace(containerData.regex, newModuleDeclaration);
-	
-  console.log(chalk.greenBright(`> [Container] Adding module "${moduleName}Module" to ${APP_CONTAINER}...`));
-  
+
+  console.log(" ",chalk.greenBright(`[container]`.padEnd(14)), chalk.bold.white(`${moduleName}Module added to ${APP_CONTAINER}! ✔️`));
+	  
   await fs.promises.writeFile(containerData.path, newFileContent, 'utf8');
 }
 
