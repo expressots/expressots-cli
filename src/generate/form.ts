@@ -81,7 +81,6 @@ export const createTemplate = async ({
 			);
 
 			console.log(" ",chalk.greenBright(`[${currentSchematic}]`.padEnd(14)), chalk.bold.white(`${schematicFile} created! ✔️`));
-			//console.log(messageColors[currentSchematic](`> [${currentSchematic}] Creating ${schematicFile}...`));
 			
 			let templateBasedMethod = "";
 			if (method) {
@@ -129,8 +128,13 @@ export const createTemplate = async ({
 		let moduleOutPath = "";
 		
 		if (target.includes("/") || target.includes("\\") || target.includes("//")) {
-			moduleExist = existsSync(`${usecaseDir}/${modulePath}/${moduleName}.module.ts`);
-			moduleOutPath = `${usecaseDir}/${modulePath}/${moduleName}.module.ts`;
+			if (modulePath === "") {
+				moduleExist = existsSync(`${usecaseDir}/${moduleName}.module.ts`);
+				moduleOutPath = `${usecaseDir}/${moduleName}.module.ts`;
+			} else {
+				moduleExist = existsSync(`${usecaseDir}/${modulePath}/${moduleName}.module.ts`);
+				moduleOutPath = `${usecaseDir}/${modulePath}/${moduleName}.module.ts`;
+			}
 		} else {
 			moduleExist = existsSync(`${usecaseDir}/${moduleName}/${moduleName}.module.ts`);
 			if (modulePath === "") {
@@ -149,8 +153,11 @@ export const createTemplate = async ({
 			controllerPath = `${file.slice(0, file.lastIndexOf('.'))}`;
 		} else if (pathCount === 1) {
 			controllerPath = `${path}/${file.slice(0, file.lastIndexOf('.'))}`;
-		} else {
+		} else if (pathCount === 2) {
 			controllerPath = `${path.split("/")[1]}/${file.slice(0, file.lastIndexOf('.'))}`;
+		} else {
+			const segments: string[] = path.split("/");
+			controllerPath = `${segments[segments.length-1]}/${file.slice(0, file.lastIndexOf('.'))}`;
 		}
 
 		if (moduleExist) {
@@ -172,14 +179,18 @@ export const createTemplate = async ({
 					data: {
 						moduleName: moduleName[0].toUpperCase() + moduleName.slice(1),
 						className,
-						path: controllerPath
+						path: controllerPath.slice(1),
 					},
 				},
 			});
 
 			console.log(" ",chalk.greenBright(`[module]`.padEnd(14)), chalk.bold.white(`${moduleName}.module created! ✔️`));
 
-			await addModuleToContainer(moduleName, modulePath, path);
+			if (target.includes("/") || target.includes("\\") || target.includes("//")) {
+				await addModuleToContainer(moduleName, modulePath, path);
+			} else {
+				await addModuleToContainer(moduleName, moduleName, path);
+			}
 		}
 	}
 	if (schematic === "service") {
@@ -204,7 +215,7 @@ const splitTarget = async ({
 	modulePath: string;
 }> => {
 
-	let pathContent: string[] = [];
+	const pathContent: string[] = target.split("/").filter((item) => item !== "");
 	const endsWithSlash: boolean = target.endsWith("/");
 	let path = "";
 	let fileName = "";
@@ -212,7 +223,7 @@ const splitTarget = async ({
 	let modulePath = "";
 
 	if (target.includes("/") || target.includes("\\") || target.includes("//")) {
-		pathContent = target.split("/").filter((item) => item !== "");
+		//pathContent = target.split("/").filter((item) => item !== "");
 		if (schematic === "service") schematic = "controller";
 		if (schematic === "service" || schematic === "controller" && pathContent.length > 4) {
 			printError("Max path depth is 4.", pathContent.join("/"));
@@ -227,7 +238,7 @@ const splitTarget = async ({
 		} else {
 			fileName = pathContent[pathContent.length-1];
 			path = pathContent.slice(0,-1).join("/");
-			module = pathContent[pathContent.length-3];
+			module = (pathContent.length == 2)? pathContent[pathContent.length-2] : pathContent[pathContent.length-3];
 			modulePath = pathContent.slice(0,-2).join("/");
 		}
 		
@@ -251,12 +262,13 @@ const splitTarget = async ({
 			const [wordName, ...path] = name
 				?.split(isCamelCase ? /(?=[A-Z])/ : kebabCaseRegex)
 				.map((word) => word.toLowerCase());
+			
 			return {
 				path: `${wordName}/${pathEdgeCase(path)}${pathEdgeCase(remainingPath)}`,
 				file: `${await getNameWithScaffoldPattern(name)}.${schematic}.ts`,
 				className: anyCaseToPascalCase(name),
 				moduleName: wordName,
-				modulePath
+				modulePath: (pathContent[0].split("-")[1])
 			};
 		}
 
