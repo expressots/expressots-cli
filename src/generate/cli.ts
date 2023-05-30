@@ -1,6 +1,5 @@
-import { CommandModule, Argv } from "yargs";
+import { Argv, CommandModule } from "yargs";
 import { createTemplate } from "./form";
-import chalk from "chalk";
 
 // eslint-disable-next-line @typescript-eslint/ban-types
 type CommandModuleArgs = {};

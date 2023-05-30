@@ -76,12 +76,12 @@ async function addModuleToContainer(name: string, modulePath?: string, path?: st
 
   if (!modulePathRegex.test(modulePath)) {
       if (path.split('/').length > 1) {
-	      newImport = `import { ${moduleName}Module } from "${usecaseDir}${modulePath}/${name}.module.ts";`;
+	      newImport = `import { ${moduleName}Module } from "${usecaseDir}${modulePath}/${name}.module";`;
       } else {
-        newImport = `import { ${moduleName}Module } from "${usecaseDir}${name}.module.ts";`;
+        newImport = `import { ${moduleName}Module } from "${usecaseDir}${name}.module";`;
       }
   } else {
-      newImport = `import { ${moduleName}Module } from "${usecaseDir}${name}/${name}.module.ts";`;
+      newImport = `import { ${moduleName}Module } from "${usecaseDir}${name}/${name}.module";`;
   }
 
   if (containerData.imports.includes(newImport) && containerData.modules.includes(`${moduleName}Module`)) {

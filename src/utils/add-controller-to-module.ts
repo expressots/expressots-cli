@@ -16,7 +16,7 @@ async function addControllerToModule(filePath: string, controllerName: string, c
   });
 
 	const newImport = `import { ${controllerName} } from "${controllerPath}";`;
-
+  
 	if (imports.includes(newImport)) {
 		return;
 	}

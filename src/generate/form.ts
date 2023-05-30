@@ -171,7 +171,7 @@ export const createTemplate = async ({
 					await addControllerToModule(`${usecaseDir}/${moduleName}/${moduleName}.module.ts`, `${className}Controller`, controllerPath);
 				}
 			}
-		} else {
+		} else {			
 			writeTemplate({
 				outputPath: moduleOutPath,
 				template: {
@@ -179,7 +179,7 @@ export const createTemplate = async ({
 					data: {
 						moduleName: moduleName[0].toUpperCase() + moduleName.slice(1),
 						className,
-						path: controllerPath.slice(1),
+						path: controllerPath
 					},
 				},
 			});
