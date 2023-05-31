@@ -21,15 +21,6 @@ type CreateTemplateProps = {
 	method: string;
 };
 
-const messageColors = {
-	usecase: (text: string) => chalk.cyan(text),
-	controller: (text: string) => chalk.magenta(text),
-	dto: (text: string) => chalk.blue(text),
-	provider: (text: string) => chalk.yellow(text),
-	module: (text: string) => chalk.red(text),
-	entity: (text: string) => chalk.gray(text),
-} as { [key: string]: (text: string) => string }
-
 export const createTemplate = async ({
 	schematic,
 	path: target,
@@ -59,13 +50,23 @@ export const createTemplate = async ({
 	mkdirSync(`${usecaseDir}/${path}`, { recursive: true });
 
 	if (schematic !== "service") {
+
+		// add to guarantee that the routing will always be the last part of the path
+		let routeSchema:string = "";
+		
+		if (target.includes("/") || target.includes("\\") || target.includes("//")) {
+			routeSchema = path.split("/").pop();
+		} else {
+			routeSchema = path.replace(/\/$/, '');
+		}
+
 		writeTemplate({
 			outputPath: `${usecaseDir}/${path}/${file}`,
 			template: {
 				path: `./templates/${schematic}.tpl`,
 				data: {
 					className,
-					route: path.replace(/\/$/, ''),
+					route: routeSchema,
 					construct: anyCaseToKebabCase(className),
 					method: getHttpMethod(method),
 				},
@@ -104,6 +105,15 @@ export const createTemplate = async ({
 				templateBasedMethod = `./templates/${resource}.tpl`;
 			}
 
+			// add to guarantee that the routing will always be the last part of the path
+			let routeSchema:string = "";
+			
+			if (target.includes("/") || target.includes("\\") || target.includes("//")) {
+				routeSchema = path.split("/").pop();
+			} else {
+				routeSchema = path.replace(/\/$/, '');
+			}
+
 			writeTemplate({
 				outputPath: `${usecaseDir}/${path}/${schematicFile}`,
 				template: {
@@ -112,7 +122,7 @@ export const createTemplate = async ({
 						className,
 						fileName: getFileNameWithoutExtension(file),
 						useCase: anyCaseToCamelCase(className),
-						route: path.replace(/\/$/, ''),
+						route: routeSchema,//path.replace(/\/$/, ''),
 						construct: anyCaseToKebabCase(className),
 						method: getHttpMethod(method),
 					},

@@ -3,8 +3,6 @@ import fs from 'node:fs';
 async function addControllerToModule(filePath: string, controllerName: string, controllerPath: string) {
   const fileContent = await fs.promises.readFile(filePath, 'utf8');
 
-  console.log(filePath, controllerName, controllerPath)
-
   const imports: string[] = [];
   const notImports: string[] = [];
   fileContent.split('\n').forEach((line: string) => {
