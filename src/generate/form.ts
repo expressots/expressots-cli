@@ -156,18 +156,18 @@ export const createTemplate = async ({
 			}
 		}
 
-		let controllerPath = "";
+		let controllerPath = "./";
 		const pathCount = (path.split("/")).length;
 		
 		if (path === "") {
-			controllerPath = `${file.slice(0, file.lastIndexOf('.'))}`;
+			controllerPath += `${file.slice(0, file.lastIndexOf('.'))}`;
 		} else if (pathCount === 1) {
-			controllerPath = `${path}/${file.slice(0, file.lastIndexOf('.'))}`;
+			controllerPath += `${path}/${file.slice(0, file.lastIndexOf('.'))}`;
 		} else if (pathCount === 2) {
-			controllerPath = `${path.split("/")[1]}/${file.slice(0, file.lastIndexOf('.'))}`;
+			controllerPath += `${path.split("/")[1]}/${file.slice(0, file.lastIndexOf('.'))}`;
 		} else {
 			const segments: string[] = path.split("/");
-			controllerPath = `${segments[segments.length-1]}/${file.slice(0, file.lastIndexOf('.'))}`;
+			controllerPath += `${segments[segments.length-1]}/${file.slice(0, file.lastIndexOf('.'))}`;
 		}
 
 		if (moduleExist) {
