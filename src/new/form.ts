@@ -97,8 +97,10 @@ const projectForm = async (projectName: string, args: any[]): Promise<void> => {
 	let packageManager: PackageManager | undefined;
 	let template: keyof typeof Template | undefined;
 	let directory: string | undefined;
+	let experimental: boolean;
 
 	// Resolving the argument order problem
+	// @todo: intent to remove for/in, see PR #17
 	for (const arg of args) {
 		if (args.length >= 3) {
 			if (
@@ -110,6 +112,8 @@ const projectForm = async (projectName: string, args: any[]): Promise<void> => {
 				packageManager = arg as PackageManager;
 			} else if (arg === "non-opinionated" || arg === "opinionated") {
 				template = arg as keyof typeof Template;
+			} else if (arg === true) {
+				experimental = arg;
 			} else {
 				directory = arg;
 			}
@@ -121,6 +125,7 @@ const projectForm = async (projectName: string, args: any[]): Promise<void> => {
 			name: projectName,
 			packageManager: packageManager,
 			template: Template[template],
+			experimental: experimental,
 			confirm: true,
 		};
 	} else {
@@ -148,6 +153,12 @@ const projectForm = async (projectName: string, args: any[]): Promise<void> => {
 					"Non-Opinionated :: A simple ExpressoTS project.",
 					"Opinionated :: A complete ExpressoTS project with an opinionated structure and features.",
 				],
+			},
+			{
+				type: "confirm",
+				name: "experimental",
+				message: "Use experimental traspile with swc",
+				default: false
 			},
 			{
 				type: "confirm",
@@ -202,11 +213,11 @@ const projectForm = async (projectName: string, args: any[]): Promise<void> => {
 
 		const [_, template] = answer.template.match(/(.*) ::/) as Array<string>;
 
-		try {
-			const emitter = degit(
-				`expressots/expressots/templates/${templates[template]}`,
-			);
-
+		try  {
+			const emitter = experimental
+				? degit(`joaoneto/expressots-opinionated-experimental#${templates[template]}`)
+				: degit(`expressots/expressots/templates/${templates[template]}`);
+	
 			await emitter.clone(answer.name);
 		} catch (err: any) {
 			printError(

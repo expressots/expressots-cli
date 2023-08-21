@@ -22,6 +22,10 @@ yargs(hideBin(process.argv))
 		"$0 new expressots-demo -p yarn -t opinionated -d ./",
 		"Create silently with path",
 	)
+	.example(
+		"$0 new expressots-demo -p yarn -t opinionated --experimental",
+		"Create with experimental swc build system"
+	)
 	.example("$0 generate service user-create", "Scaffold a service")
 	.example("$0 info", "Show CLI details")
 	.demandCommand(1, "You need at least one command before moving on")

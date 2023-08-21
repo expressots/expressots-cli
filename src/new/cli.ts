@@ -12,7 +12,7 @@ const createProject = (): CommandModule<CommandModuleArgs, any> => {
 	}
 
 	return {
-		command: "new <project-name> [package-manager] [template] [directory]",
+		command: "new <project-name> [package-manager] [template] [directory] [experimental]",
 		describe: "Create a new project",
 		builder: (yargs: Argv): Argv => {
 			yargs
@@ -37,6 +37,11 @@ const createProject = (): CommandModule<CommandModuleArgs, any> => {
 					type: "string",
 					alias: "d",
 				})
+				.option("experimental", {
+					describe: "Use experimental traspile with swc",
+					type: "boolean",
+					default: false,
+				})
 				.implies("package-manager", "template")
 				.implies("template", "package-manager");
 
@@ -47,11 +52,13 @@ const createProject = (): CommandModule<CommandModuleArgs, any> => {
 			packageManager,
 			template,
 			directory,
+			experimental,
 		}) => {
 			return await projectForm(projectName, [
 				packageManager,
 				template,
 				directory,
+				experimental,
 			]);
 		},
 	};
