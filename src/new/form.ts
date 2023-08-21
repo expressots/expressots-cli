@@ -214,6 +214,7 @@ const projectForm = async (projectName: string, args: any[]): Promise<void> => {
 		const [_, template] = answer.template.match(/(.*) ::/) as Array<string>;
 
 		try  {
+			// @todo: new templates, see expressots/expressots PR #79
 			const emitter = experimental
 				? degit(`expressots/expressots/templates/experimental/${templates[template]}`)
 				: degit(`expressots/expressots/templates/${templates[template]}`);
