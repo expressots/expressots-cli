@@ -215,7 +215,7 @@ const projectForm = async (projectName: string, args: any[]): Promise<void> => {
 
 		try  {
 			const emitter = experimental
-				? degit(`joaoneto/expressots-opinionated-experimental#${templates[template]}`)
+				? degit(`expressots/expressots/templates/experimental/${templates[template]}`)
 				: degit(`expressots/expressots/templates/${templates[template]}`);
 	
 			await emitter.clone(answer.name);
