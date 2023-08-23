@@ -24,7 +24,7 @@ yargs(hideBin(process.argv))
 	)
 	.example(
 		"$0 new expressots-demo -p yarn -t opinionated --experimental",
-		"Create with experimental swc build system"
+		"Create using experimental, not battle-tested, features of ExpressoTS",
 	)
 	.example("$0 generate service user-create", "Scaffold a service")
 	.example("$0 info", "Show CLI details")

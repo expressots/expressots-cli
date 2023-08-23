@@ -38,7 +38,7 @@ const createProject = (): CommandModule<CommandModuleArgs, any> => {
 					alias: "d",
 				})
 				.option("experimental", {
-					describe: "Use experimental traspile with swc",
+					describe: "Use experimental, not battle-tested, features of ExpressoTS",
 					type: "boolean",
 					default: false,
 				})
@@ -47,19 +47,8 @@ const createProject = (): CommandModule<CommandModuleArgs, any> => {
 
 			return yargs;
 		},
-		handler: async ({
-			projectName,
-			packageManager,
-			template,
-			directory,
-			experimental,
-		}) => {
-			return await projectForm(projectName, [
-				packageManager,
-				template,
-				directory,
-				experimental,
-			]);
+		handler: async ({ projectName, packageManager, template, directory, experimental }) => {
+			return await projectForm(projectName, [packageManager, template, directory, experimental]);
 		},
 	};
 };

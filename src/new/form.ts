@@ -7,6 +7,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { centerText } from "../utils/center-text";
 import { printError } from "../utils/cli-ui";
+import { TemplateEnum } from "../@types";
+import templateList from "../templates-list";
 
 async function packageManagerInstall({
 	packageManager,
@@ -79,11 +81,6 @@ function changePackageName({
 	fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
 }
 
-enum Template {
-	"non-opinionated" = "Non-Opinionated :: A simple ExpressoTS project.",
-	opinionated = "Opinionated :: A complete ExpressoTS project with an opinionated structure and features.",
-}
-
 const enum PackageManager {
 	npm = "npm",
 	yarn = "yarn",
@@ -95,7 +92,7 @@ const projectForm = async (projectName: string, args: any[]): Promise<void> => {
 	let answer: any;
 	const projName: string = projectName;
 	let packageManager: PackageManager | undefined;
-	let template: keyof typeof Template | undefined;
+	let template: TemplateEnum | undefined;
 	let directory: string | undefined;
 	let experimental: boolean;
 
@@ -111,7 +108,7 @@ const projectForm = async (projectName: string, args: any[]): Promise<void> => {
 			) {
 				packageManager = arg as PackageManager;
 			} else if (arg === "non-opinionated" || arg === "opinionated") {
-				template = arg as keyof typeof Template;
+				template = arg as TemplateEnum;
 			} else if (arg === true) {
 				experimental = arg;
 			} else {
@@ -124,7 +121,7 @@ const projectForm = async (projectName: string, args: any[]): Promise<void> => {
 		answer = {
 			name: projectName,
 			packageManager: packageManager,
-			template: Template[template],
+			template: template,
 			experimental: experimental,
 			confirm: true,
 		};
@@ -146,19 +143,24 @@ const projectForm = async (projectName: string, args: any[]): Promise<void> => {
 				choices: ["npm", "yarn", "pnpm", "bun"],
 			},
 			{
+				type: "confirm",
+				name: "experimental",
+				message: "Use experimental, not battle-tested, features of ExpressoTS",
+				default: false,
+			},
+			{
 				type: "list",
 				name: "template",
 				message: "Select a template",
-				choices: [
-					"Non-Opinionated :: A simple ExpressoTS project.",
-					"Opinionated :: A complete ExpressoTS project with an opinionated structure and features.",
-				],
+				when: ({ experimental }) => !experimental,
+				choices: templateList.stable.map(({ description }) => description),
 			},
 			{
-				type: "confirm",
-				name: "experimental",
-				message: "Use experimental traspile with swc",
-				default: false
+				type: "list",
+				name: "template",
+				message: "Select a experimental template",
+				when: ({ experimental }) => experimental,
+				choices: templateList.experimental.map(({ description }) => description),
 			},
 			{
 				type: "confirm",
@@ -179,9 +181,9 @@ const projectForm = async (projectName: string, args: any[]): Promise<void> => {
 	}
 
 	// Hashmap of templates and their directories
-	const templates: Record<string, unknown> = {
-		"Non-Opinionated": "non_opinionated",
-		Opinionated: "opinionated",
+	const templates: Record<string, TemplateEnum> = {
+		"Non-Opinionated": TemplateEnum.NON_OPINIONATED,
+		Opinionated: TemplateEnum.OPINIONATED,
 	};
 
 	if (answer.confirm) {
@@ -215,9 +217,9 @@ const projectForm = async (projectName: string, args: any[]): Promise<void> => {
 
 		try  {
 			// @todo: new templates, see expressots/expressots PR #79
-			const emitter = experimental
-				? degit(`expressots/expressots/templates/experimental/${templates[template]}`)
-				: degit(`expressots/expressots/templates/${templates[template]}`);
+			const stability = answer.experimental ? "experimental" : "stable";
+			const { path } = templateList[stability].find((item) => (item.name = templates[template]));
+			const emitter = degit(path);
 	
 			await emitter.clone(answer.name);
 		} catch (err: any) {
