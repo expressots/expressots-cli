@@ -5,6 +5,8 @@ import { hideBin } from "yargs/helpers";
 import { generateProject } from "./generate";
 import { infoProject } from "./info";
 import { createProject } from "./new";
+import { devProject } from "./dev";
+import { buildProject } from "./build";
 
 export const CLI_VERSION = "1.3.4";
 
@@ -15,6 +17,8 @@ yargs(hideBin(process.argv))
 	.command(createProject())
 	.command(generateProject())
 	.command(infoProject())
+	.command(devProject())
+	.command(buildProject())
 	.example("$0 new expressots-demo", "Create interactively")
 	.example("$0 new expressots-demo -d ./", "Create interactively with path")
 	.example("$0 new expressots-demo -p yarn -t opinionated", "Create silently")

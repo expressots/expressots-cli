@@ -8,6 +8,7 @@ import path from "node:path";
 import { centerText } from "../utils/center-text";
 import { printError } from "../utils/cli-ui";
 import { TemplateEnum } from "../@types";
+import { getPlatformCommand } from "../utils/get-platform-command-bin";
 import templateList from "../templates-list";
 
 async function packageManagerInstall({
@@ -20,10 +21,7 @@ async function packageManagerInstall({
 	progressBar: SingleBar;
 }) {
 	return new Promise((resolve, reject) => {
-		const isWindows: boolean = process.platform === "win32";
-		const command: string = isWindows
-			? `${packageManager}.cmd`
-			: packageManager;
+		const command = getPlatformCommand(packageManager);
 
 		const installProcess = spawn(command, ["install"], {
 			cwd: directory,
