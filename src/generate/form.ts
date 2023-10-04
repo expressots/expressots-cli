@@ -254,33 +254,36 @@ export const createTemplate = async ({
 				}
 			}
 		} else {
-			writeTemplate({
-				outputPath: moduleOutPath,
-				template: {
-					path: `./templates/module.tpl`,
-					data: {
-						moduleName:
-							moduleName[0].toUpperCase() + moduleName.slice(1),
-						className,
-						path: controllerPath,
+			if (opinionated || (!opinionated && schematic == "service")) {
+				writeTemplate({
+					outputPath: moduleOutPath,
+					template: {
+						path: `./templates/module.tpl`,
+						data: {
+							moduleName:
+								moduleName[0].toUpperCase() +
+								moduleName.slice(1),
+							className,
+							path: controllerPath,
+						},
 					},
-				},
-			});
+				});
 
-			console.log(
-				" ",
-				chalk.greenBright(`[module]`.padEnd(14)),
-				chalk.bold.white(`${moduleName}.module created! ✔️`),
-			);
+				console.log(
+					" ",
+					chalk.greenBright(`[module]`.padEnd(14)),
+					chalk.bold.white(`${moduleName}.module created! ✔️`),
+				);
 
-			if (
-				target.includes("/") ||
-				target.includes("\\") ||
-				target.includes("//")
-			) {
-				await addModuleToContainer(moduleName, modulePath, path);
-			} else {
-				await addModuleToContainer(moduleName, moduleName, path);
+				if (
+					target.includes("/") ||
+					target.includes("\\") ||
+					target.includes("//")
+				) {
+					await addModuleToContainer(moduleName, modulePath, path);
+				} else {
+					await addModuleToContainer(moduleName, moduleName, path);
+				}
 			}
 		}
 	}
