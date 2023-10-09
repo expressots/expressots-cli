@@ -7,6 +7,9 @@ import fs from "node:fs";
 import path from "node:path";
 import { centerText } from "../utils/center-text";
 import { printError } from "../utils/cli-ui";
+import { TemplateEnum } from "../@types";
+import { getPlatformCommand } from "../utils/get-platform-command-bin";
+import templateList from "../templates-list";
 
 async function packageManagerInstall({
 	packageManager,
@@ -18,10 +21,7 @@ async function packageManagerInstall({
 	progressBar: SingleBar;
 }) {
 	return new Promise((resolve, reject) => {
-		const isWindows: boolean = process.platform === "win32";
-		const command: string = isWindows
-			? `${packageManager}.cmd`
-			: packageManager;
+		const command = getPlatformCommand(packageManager);
 
 		const installProcess = spawn(command, ["install"], {
 			cwd: directory,
@@ -79,11 +79,6 @@ function changePackageName({
 	fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
 }
 
-enum Template {
-	"non-opinionated" = "Non-Opinionated :: A simple ExpressoTS project.",
-	opinionated = "Opinionated :: A complete ExpressoTS project with an opinionated structure and features.",
-}
-
 const enum PackageManager {
 	npm = "npm",
 	yarn = "yarn",
@@ -95,10 +90,12 @@ const projectForm = async (projectName: string, args: any[]): Promise<void> => {
 	let answer: any;
 	const projName: string = projectName;
 	let packageManager: PackageManager | undefined;
-	let template: keyof typeof Template | undefined;
+	let template: TemplateEnum | undefined;
 	let directory: string | undefined;
+	let experimental: boolean;
 
 	// Resolving the argument order problem
+	// @todo: intent to remove for/in, see PR #17
 	for (const arg of args) {
 		if (args.length >= 3) {
 			if (
@@ -109,7 +106,9 @@ const projectForm = async (projectName: string, args: any[]): Promise<void> => {
 			) {
 				packageManager = arg as PackageManager;
 			} else if (arg === "non-opinionated" || arg === "opinionated") {
-				template = arg as keyof typeof Template;
+				template = arg as TemplateEnum;
+			} else if (arg === true) {
+				experimental = arg;
 			} else {
 				directory = arg;
 			}
@@ -120,7 +119,8 @@ const projectForm = async (projectName: string, args: any[]): Promise<void> => {
 		answer = {
 			name: projectName,
 			packageManager: packageManager,
-			template: Template[template],
+			template: template,
+			experimental: experimental,
 			confirm: true,
 		};
 	} else {
@@ -141,13 +141,24 @@ const projectForm = async (projectName: string, args: any[]): Promise<void> => {
 				choices: ["npm", "yarn", "pnpm", "bun"],
 			},
 			{
+				type: "confirm",
+				name: "experimental",
+				message: "Use experimental, not battle-tested, features of ExpressoTS",
+				default: false,
+			},
+			{
 				type: "list",
 				name: "template",
 				message: "Select a template",
-				choices: [
-					"Non-Opinionated :: A simple ExpressoTS project.",
-					"Opinionated :: A complete ExpressoTS project with an opinionated structure and features.",
-				],
+				when: ({ experimental }) => !experimental,
+				choices: templateList.stable.map(({ description }) => description),
+			},
+			{
+				type: "list",
+				name: "template",
+				message: "Select a experimental template",
+				when: ({ experimental }) => experimental,
+				choices: templateList.experimental.map(({ description }) => description),
 			},
 			{
 				type: "confirm",
@@ -168,9 +179,9 @@ const projectForm = async (projectName: string, args: any[]): Promise<void> => {
 	}
 
 	// Hashmap of templates and their directories
-	const templates: Record<string, unknown> = {
-		"Non-Opinionated": "non_opinionated",
-		Opinionated: "opinionated",
+	const templates: Record<string, TemplateEnum> = {
+		"Non-Opinionated": TemplateEnum.NON_OPINIONATED,
+		Opinionated: TemplateEnum.OPINIONATED,
 	};
 
 	if (answer.confirm) {
@@ -202,11 +213,12 @@ const projectForm = async (projectName: string, args: any[]): Promise<void> => {
 
 		const [_, template] = answer.template.match(/(.*) ::/) as Array<string>;
 
-		try {
-			const emitter = degit(
-				`expressots/expressots/templates/${templates[template]}`,
-			);
-
+		try  {
+			// @todo: new templates, see expressots/expressots PR #79
+			const stability = answer.experimental ? "experimental" : "stable";
+			const { path } = templateList[stability].find((item) => (item.name = templates[template]));
+			const emitter = degit(path);
+	
 			await emitter.clone(answer.name);
 		} catch (err: any) {
 			printError(

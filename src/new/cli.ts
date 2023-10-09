@@ -12,7 +12,7 @@ const createProject = (): CommandModule<CommandModuleArgs, any> => {
 	}
 
 	return {
-		command: "new <project-name> [package-manager] [template] [directory]",
+		command: "new <project-name> [package-manager] [template] [directory] [experimental]",
 		describe: "Create a new project",
 		builder: (yargs: Argv): Argv => {
 			yargs
@@ -37,22 +37,18 @@ const createProject = (): CommandModule<CommandModuleArgs, any> => {
 					type: "string",
 					alias: "d",
 				})
+				.option("experimental", {
+					describe: "Use experimental, not battle-tested, features of ExpressoTS",
+					type: "boolean",
+					default: false,
+				})
 				.implies("package-manager", "template")
 				.implies("template", "package-manager");
 
 			return yargs;
 		},
-		handler: async ({
-			projectName,
-			packageManager,
-			template,
-			directory,
-		}) => {
-			return await projectForm(projectName, [
-				packageManager,
-				template,
-				directory,
-			]);
+		handler: async ({ projectName, packageManager, template, directory, experimental }) => {
+			return await projectForm(projectName, [packageManager, template, directory, experimental]);
 		},
 	};
 };
