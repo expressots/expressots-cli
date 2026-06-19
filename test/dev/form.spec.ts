@@ -7,13 +7,15 @@ import * as os from "os";
 import * as path from "path";
 import { EventEmitter } from "events";
 
-const execSyncMock = jest.fn();
 const spawnMock = jest.fn();
 
-jest.mock("child_process", () => ({
-	execSync: (...args: unknown[]) => execSyncMock(...args),
-	spawn: (...args: unknown[]) => spawnMock(...args),
-}));
+jest.mock("cross-spawn", () => {
+	const fn = (...args: unknown[]) => spawnMock(...args);
+	(fn as unknown as { sync: jest.Mock }).sync = jest.fn((...args: unknown[]) =>
+		spawnMock(...args),
+	);
+	return fn;
+});
 
 import {
 	attachToContainer,
@@ -41,12 +43,34 @@ let originalCwd: string;
 let tmpDir: string;
 let logSpy: jest.SpyInstance;
 
+function syncSuccess(): {
+	status: number;
+	error: null;
+	stdout: string;
+	stderr: string;
+} {
+	return { status: 0, error: null, stdout: "stats table", stderr: "" };
+}
+
+function syncFailure(): {
+	status: number;
+	error: Error;
+	stdout: string;
+	stderr: string;
+} {
+	return {
+		status: 1,
+		error: new Error("docker not running"),
+		stdout: "",
+		stderr: "",
+	};
+}
+
 beforeEach(() => {
 	originalCwd = process.cwd();
 	tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "ex-cli-dev-form-"));
 	process.chdir(tmpDir);
 	logSpy = jest.spyOn(console, "log").mockImplementation(() => undefined);
-	execSyncMock.mockReset();
 	spawnMock.mockReset();
 });
 
@@ -60,7 +84,7 @@ describe("dev/form", () => {
 	it("startDevContainer exits early when compose file is missing", async () => {
 		await startDevContainer(baseOptions);
 
-		expect(execSyncMock).not.toHaveBeenCalled();
+		expect(spawnMock).not.toHaveBeenCalled();
 		expect(logSpy.mock.calls.some((c) => String(c[0]).includes("not found"))).toBe(
 			true,
 		);
@@ -71,9 +95,7 @@ describe("dev/form", () => {
 			path.join(tmpDir, baseOptions.composeFile),
 			"services: {}\n",
 		);
-		execSyncMock.mockImplementation(() => {
-			throw new Error("docker not running");
-		});
+		spawnMock.mockReturnValue(syncFailure());
 
 		await startDevContainer(baseOptions);
 
@@ -87,30 +109,30 @@ describe("dev/form", () => {
 			path.join(tmpDir, baseOptions.composeFile),
 			"services: {}\n",
 		);
-		execSyncMock.mockImplementation(() => "ok");
+		spawnMock.mockReturnValue(syncSuccess());
 
 		await startDevContainer({ ...baseOptions, build: true });
 
-		expect(execSyncMock).toHaveBeenCalled();
-		const calls = execSyncMock.mock.calls.map((c) => String(c[0]));
-		expect(calls.some((c) => c.includes("docker compose") && c.includes("build"))).toBe(
-			true,
+		expect(spawnMock).toHaveBeenCalled();
+		const composeCalls = spawnMock.mock.calls.filter(
+			([cmd, args]) => cmd === "docker" && args?.[0] === "compose",
 		);
-		expect(calls.some((c) => c.includes("docker compose") && c.includes("up"))).toBe(
-			true,
-		);
-		expect(calls.some((c) => c.includes("-d"))).toBe(true);
+		expect(composeCalls.some(([, args]) => args.includes("build"))).toBe(true);
+		expect(composeCalls.some(([, args]) => args.includes("up"))).toBe(true);
+		expect(composeCalls.some(([, args]) => args.includes("-d"))).toBe(true);
 	});
 
 	it("stopDevContainer uses default compose when dev file is missing", async () => {
 		fs.writeFileSync(path.join(tmpDir, "docker-compose.yml"), "services: {}\n");
-		execSyncMock.mockImplementation(() => "ok");
+		spawnMock.mockReturnValue(syncSuccess());
 
 		await stopDevContainer(baseOptions);
 
-		const call = String(execSyncMock.mock.calls[0][0]);
-		expect(call).toContain("docker-compose.yml");
-		expect(call).toContain("down");
+		expect(spawnMock).toHaveBeenCalledWith(
+			"docker",
+			expect.arrayContaining(["compose", "-f", expect.stringContaining("docker-compose.yml"), "down"]),
+			expect.any(Object),
+		);
 	});
 
 	it("attachToContainer reports missing compose file", async () => {
@@ -148,11 +170,16 @@ describe("dev/form", () => {
 			path.join(tmpDir, baseOptions.composeFile),
 			"services: {}\n",
 		);
-		execSyncMock.mockImplementation(() => "stats table");
+		spawnMock.mockReturnValue(syncSuccess());
 
 		await showStatus(baseOptions);
 
-		expect(execSyncMock.mock.calls.length).toBeGreaterThanOrEqual(2);
+		expect(spawnMock.mock.calls.length).toBeGreaterThanOrEqual(2);
+		expect(
+			spawnMock.mock.calls.some(
+				([cmd, args]) => cmd === "docker" && args?.[0] === "stats",
+			),
+		).toBe(true);
 	});
 
 	it("showLogs spawns compose logs with tail and follow", async () => {

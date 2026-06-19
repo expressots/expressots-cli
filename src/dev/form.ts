@@ -1,7 +1,8 @@
 import fs from "fs";
 import path from "path";
 import chalk from "chalk";
-import { spawn, execSync, SpawnOptions } from "child_process";
+import type { SpawnOptions } from "child_process";
+import { safeSpawn, safeSpawnSync } from "../utils/safe-spawn";
 
 export interface DevOptions {
 	container: boolean;
@@ -186,15 +187,24 @@ export async function showStatus(options: DevOptions): Promise<void> {
 	// Show resource usage
 	console.log(chalk.bold("\nResource Usage:"));
 	try {
-		// Use double quotes for cross-platform compatibility (Windows + Unix)
-		const output = execSync(
-			'docker stats --no-stream --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}"',
+		const result = safeSpawnSync(
+			"docker",
+			[
+				"stats",
+				"--no-stream",
+				"--format",
+				"table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}",
+			],
 			{
 				encoding: "utf-8",
 				stdio: ["pipe", "pipe", "pipe"],
 			},
 		);
-		console.log(output);
+		if (!result.error && result.stdout) {
+			console.log(String(result.stdout));
+		} else {
+			throw new Error("docker stats failed");
+		}
 	} catch {
 		console.log(chalk.gray("  Unable to get resource stats"));
 	}
@@ -230,12 +240,10 @@ export async function showLogs(options: DevOptions): Promise<void> {
  * Check if Docker is running
  */
 function isDockerRunning(): boolean {
-	try {
-		execSync("docker info", { stdio: ["pipe", "pipe", "pipe"] });
-		return true;
-	} catch {
-		return false;
-	}
+	const result = safeSpawnSync("docker", ["info"], {
+		stdio: ["pipe", "pipe", "pipe"],
+	});
+	return !result.error && result.status === 0;
 }
 
 /**
@@ -245,24 +253,19 @@ function runDockerCompose(
 	args: string[],
 	options: { cwd: string; env?: NodeJS.ProcessEnv },
 ): void {
-	try {
-		// Try docker compose (v2) first
-		execSync(`docker compose ${args.join(" ")}`, {
-			cwd: options.cwd,
-			env: options.env || process.env,
-			stdio: "inherit",
-		});
-	} catch {
-		// Fall back to docker-compose (v1)
-		try {
-			execSync(`docker-compose ${args.join(" ")}`, {
-				cwd: options.cwd,
-				env: options.env || process.env,
-				stdio: "inherit",
-			});
-		} catch (error) {
+	const spawnOptions = {
+		cwd: options.cwd,
+		env: options.env || process.env,
+		stdio: "inherit" as const,
+	};
+
+	// Try docker compose (v2) first, fall back to docker-compose (v1).
+	const v2 = safeSpawnSync("docker", ["compose", ...args], spawnOptions);
+	if (v2.error || (typeof v2.status === "number" && v2.status !== 0)) {
+		const v1 = safeSpawnSync("docker-compose", args, spawnOptions);
+		if (v1.error || (typeof v1.status === "number" && v1.status !== 0)) {
 			console.log(chalk.red("Error running docker-compose"));
-			throw error;
+			throw v1.error ?? new Error(`exited with code ${v1.status}`);
 		}
 	}
 }
@@ -271,18 +274,10 @@ function runDockerCompose(
  * Spawn docker-compose command (for interactive/streaming)
  */
 function spawnDockerCompose(args: string[], options: SpawnOptions): void {
-	// Try docker compose (v2) first
-	const proc = spawn("docker", ["compose", ...args], {
-		...options,
-		shell: true,
-	});
+	const proc = safeSpawn("docker", ["compose", ...args], options);
 
 	proc.on("error", () => {
-		// Fall back to docker-compose (v1)
-		spawn("docker-compose", args, {
-			...options,
-			shell: true,
-		});
+		safeSpawn("docker-compose", args, options);
 	});
 }
 
