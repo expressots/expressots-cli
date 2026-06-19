@@ -71,7 +71,7 @@
     "ora": "5.4.1",
     "semver": "7.6.3",
     "ts-node": "10.9.2",
-    "yargs": "17.7.2"
+    "yargs": "18.0.0"
   },
   "devDependencies": {
     "@codecov/vite-plugin": "^2.0.1",
