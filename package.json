@@ -95,7 +95,7 @@
     "release-it": "^20.0.1",
     "ts-jest": "^29.2.5",
     "tsx": "^4.19.2",
-    "typescript": "5.2.2"
+    "typescript": "7.0.2"
   },
   "lint-staged": {
     "src/**/*.ts": [
